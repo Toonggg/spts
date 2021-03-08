@@ -9,3 +9,6 @@ Currently, the software can be installed in Python 3 (specifically Python 3.7, 3
 The denoising extension module, written in C/C++, can now be compiled under Python 3. 
 More information can be found [here](http://python3porting.com/cextensions.html). 
 
+### TO-DOs 
+In the `analysis.py` function, label integration method doesn't work yet. This needs to be looked into in the future,
+so that when this is used, it works... 
