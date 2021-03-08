@@ -12,13 +12,13 @@ sys.path.append(this_dir + "/spts/data")
 from setuptools import setup, Extension, find_packages
 
 import numpy
-setup(    
+setup(   
     name='spts',
     version='0.0.2',
     description='SPTS',
     long_description='SPTS - Single Particle Tracking and Sizing',
     #url='',
-    author='Hantke, Max Felix',
+    author='Hantke, Max Felix', 
     author_email='hantke@xray.bmc.uu.se',
     license='BSD',
 

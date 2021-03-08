@@ -77,30 +77,27 @@ def get_values_window(image, x_i, y_i, window_size, circle_window, i, masked_ima
         log_and_raise_error(logger, "window_size (%i) must be an odd number. Please change your configuration and try again." % window_size)
         return None
     
-    if (x_i-window_size/2 < 0) or \
-       x_i-window_size/2+window_size>=image.shape[1] or \
-       (y_i-window_size/2 < 0) or \
-       y_i-window_size/2+window_size>=image.shape[0]:
+    if (x_i-window_size//2 < 0) or \
+       x_i-window_size//2+window_size>=image.shape[1] or \
+       (y_i-window_size//2 < 0) or \
+       y_i-window_size//2+window_size>=image.shape[0]:
         log_info(logger, "Particle too close to edge - cannot be analysed.")
         return None
 
-    values = image[y_i-(window_size-1)/2:y_i+(window_size-1)/2+1,
-                   x_i-(window_size-1)/2:x_i+(window_size-1)/2+1]
+    values = image[y_i-(window_size-1)//2:y_i+(window_size-1)//2+1, x_i-(window_size-1)//2:x_i+(window_size-1)//2+1]
     
     if circle_window:
         mask = make_circle_mask(window_size)
         values = values[mask]
         
         if masked_image is not None:
-            (masked_image[y_i-(window_size-1)/2:y_i+(window_size-1)/2+1,
-                          x_i-(window_size-1)/2:x_i+(window_size-1)/2+1])[mask] = values[:]
+            (masked_image[y_i-(window_size-1)//2:y_i+(window_size-1)//2+1, x_i-(window_size-1)//2:x_i+(window_size-1)//2+1])[mask] = values[:]
         if thumbnails is not None:
             (thumbnails[i,:,:])[mask] = values[:]
     else:
         if masked_image is not None:
-            masked_image[y_i-(window_size-1)/2:y_i+(window_size-1)/2+1,
-                         x_i-(window_size-1)/2:x_i+(window_size-1)/2+1] = values[:,:]
-        if thumbnail is not None:
+            masked_image[y_i-(window_size-1)//2:y_i+(window_size-1)//2+1, x_i-(window_size-1)//2:x_i+(window_size-1)//2+1] = values[:,:]
+        if thumbnails is not None: 
             thumbnails[i,:,:] = values[:,:]
 
     return values
@@ -114,17 +111,17 @@ def get_values_label(image, labels, i_label, masked_image=None, thumbnails=None)
     if thumbnails is not None:
         i = (image * pixels).argmax()
         x = i % image.shape[1]
-        y = i / image.shape[1]
+        y = i // image.shape[1]
         n = thumbnails.shape[1]
         Ny = image.shape[0]
         Nx = image.shape[1]
-        xmin = x-n/2
+        xmin = x-n // 2
         xmin = xmin if xmin > 0 else 0
-        ymin = y-n/2
+        ymin = y-n // 2
         ymin = ymin if ymin > 0 else 0
-        xmax = x-n/2+n
+        xmax = x-n // (2+n)
         xmax = xmax if xmax < Nx else Nx
-        ymax = y-n/2+n
+        ymax = y-n // (2+n)
         ymax = ymax if ymax < Ny else Ny
         tmp = image[ymin:ymax, xmin:xmax]
         thumbnails[i_label,:tmp.shape[0],:tmp.shape[1]] = tmp[:,:] 
@@ -148,7 +145,7 @@ def measure_circumference(mask):
     return border.sum()
 
 def make_circle_mask(diameter):
-    center = (diameter-1.)/2.
+    center = (diameter-1.) / 2.
     x,y = np.meshgrid(np.arange(diameter), np.arange(diameter))
     rsq = (x-center)**2 + (y-center)**2
     mask = rsq <= center**2

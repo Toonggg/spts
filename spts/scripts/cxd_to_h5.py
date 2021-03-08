@@ -117,11 +117,11 @@ def cxd_to_h5(filename_cxd, filename_bg_cxd, filename_cxi, Nbg_max):
 if __name__ == "__main__":
 
     ### If there is an uppercase "-" in an optional argument it is converted internally to a "_", so we acccess these arguments in code with a "_" as well!!! 
-    parser = argparse.ArgumentParser(description='Conversion of CXD (Hamamatsu file format) to HDF5') # positional argument
-    parser.add_argument('filename', type=str, help='CXD filename') # optional argument
+    parser = argparse.ArgumentParser(description='Conversion of CXD (Hamamatsu file format) to HDF5') #  
+    parser.add_argument('filename', type=str, help='CXD filename') # positional argument
     parser.add_argument('-b','--background-filename', type=str, help='CXD filename with photon background data') # optional argument
     parser.add_argument('-o','--out-filename', type=str, help='destination file') # optional argument
-    parser.add_argument('-n','--bg-frames-max', type=int, help='maximum number of frames that will be used for background calculation', default=250) # optional argument
+    parser.add_argument('-n','--bg-frames-max', type=int, help='maximum number of frames that will be used for background calculation', default = 250) # optional argument
     
     args = parser.parse_args()
 
