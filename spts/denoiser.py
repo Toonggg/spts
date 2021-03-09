@@ -1,5 +1,4 @@
-import numpy as np
-#import scipy.ndimage       
+import numpy as np   
 
 class DenoiserGauss:
 
@@ -10,8 +9,6 @@ class DenoiserGauss:
 
     def denoise_image(self, image, full_output=False):
         image_f64 = np.asarray(image, dtype=np.float64)
-        # scipy (scipy defines sigma here weirdly ... so I better use my own gaussian)
-        #image_smoothed = scipy.ndimage.gaussian_filter(image_f64, self.window_size/2.)
         if self._G is None or self._G_sigma != self.sigma:
             Nx = image.shape[1]
             Ny = image.shape[0]
@@ -64,7 +61,7 @@ class DenoiserHistogram:
 
     def __init__(self, window_size, images_bg, vmin, vmax, dx=1, vmin_full=-50, vmax_full=255):
         import spts.denoise
-        images_bg_i32 = np.asarray(images_bg, dtype=np.int32) # No copy is performed with asarray if images_bg has right dtype
+        images_bg_i32 = np.asarray(images_bg, dtype=np.int32) 
         self.window_size = window_size
         self.vmin = vmin
         self.vmax = vmax

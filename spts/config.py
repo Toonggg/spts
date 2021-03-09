@@ -3,7 +3,8 @@ import os, numpy, configparser
 import logging
 logger = logging.getLogger(__name__)
 
-from log import log_and_raise_error,log_warning,log_info,log_debug
+import spts.log
+from spts.log import log_and_raise_error,log_warning,log_info,log_debug
 
 def read_configfile(configfile):
     """

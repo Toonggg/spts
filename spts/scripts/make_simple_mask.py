@@ -1,4 +1,4 @@
-#/usr/bin/env python
+#!/usr/local/bin/python3
 import argparse
 import numpy
 import h5py

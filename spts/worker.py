@@ -96,11 +96,11 @@ class Worker:
            
         for work_name, work_func in tmp:
             if not work_name in tmp_package:
-                log_debug(logger, "(%i) Starting %s" % (i, work_name))
+                log_info(logger, "(%i) Starting %s" % (i, work_name))
                 out_package, tmp_package = work_func(work_package, tmp_package, out_package)
-                log_debug(logger, "(%i) Done with %s" % (i, work_name))
+                log_info(logger, "(%i) Done with %s" % (i, work_name))
             if work_name.endswith(target):
-                log_debug(logger, "(%i) Reached target %s" % (i, work_name))
+                log_info(logger, "(%i) Reached target %s" % (i, work_name))
                 return out_package
         log_warning(logger, "(%i) Incorrect target defined (%s)" % (i, target))
         return out_package
@@ -145,7 +145,7 @@ class Worker:
         image = tmp_package["2_process"]["image"]
 
         # Denoise
-        log_debug(logger, "(%i/%i) Denoise image" % (i+1, self.N_arr))
+        log_info(logger, "(%i/%i) Denoise image" % (i+1, self.N_arr))
         self._update_denoiser()
         image_denoised = self.denoiser.denoise_image(image, full_output=True)
         O.add("image_denoised", np.asarray(image_denoised, dtype=np.int16), 4, pipeline=True)
@@ -178,7 +178,7 @@ class Worker:
         image_thresholded = tmp_package["4_threshold"]["image_thresholded"]
 
         # Detect particles
-        log_debug(logger, "(%i/%i) Detect particles" % (i+1, self.N_arr))
+        log_info(logger, "(%i/%i) Detect particles" % (i+1, self.N_arr))
         n_max = self.conf["detect"]["n_particles_max"]
         success, i_labels, image_labels, area, x, y, score, merged, dist_neighbor, dislocation = spts.detect.find_particles(image_denoised, image_thresholded,
                                                                                                                        self.conf["detect"]["min_dist"],
@@ -242,7 +242,7 @@ class Worker:
                                              **self.conf["analyse"])
         success, peak_success, peak_sum, peak_mean, peak_median, peak_min, peak_max, peak_size, peak_saturated, peak_eccentricity, peak_circumference, masked_image, peak_thumbnails = res
         # Analyse image at particle positions
-        log_debug(logger, "(%i/%i) Analyse image at %i particle positions" % (i, self.N_arr, len(i_labels)))
+        log_info(logger, "(%i/%i) Analyse image at %i particle positions" % (i, self.N_arr, len(i_labels)))
         #if n_labels > self.n_particles_max:
         #    log_warning(logger, "(%i/%i) Too many particles (%i/%i) - skipping analysis for %i particles" % (i_image+1, self.N_arr, n_labels, self.n_particles_max, n_labels - self.n_particles_max))
         O.add("peak_success", uniform_particle_array(peak_sum, n_max, np.bool, vinit=False), 0)

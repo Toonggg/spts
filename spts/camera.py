@@ -1,12 +1,12 @@
-import OleFileIO_PL
+import olefile
 from struct import unpack
 import numpy as np
 
 class CXDReader:
     def __init__(self, filename):
-        self._ole = OleFileIO_PL.OleFileIO(filename)
+        self._ole = olefile.OleFileIO(filename)
         self._n = unpack('i',self._ole.openstream('File Info/Field Count').read())[0]
-        self._closed = False
+        self._closed = False 
         
     def get_number_of_frames(self):
         return self._n

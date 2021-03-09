@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/local/bin/python3
 import numpy as np
 import argparse
 import os, sys, shutil
@@ -17,7 +17,8 @@ for f in filenames:
     if not os.path.exists(d):
         os.mkdir(d)
 
-    cmds = ["cp ./spts.conf %s/" % (d), "ln -s ../%s %s/frames.cxi" % (f,d), "cd %s; run_spts.py -c 9 -v; cd .." % (d)]
+    #cmds = ["cp ./spts.conf %s/" % (d), "ln -s ../%s %s/frames.cxi" % (f,d), "cd %s; run_spts.py -c 9 -v; cd .." % (d)]
+    cmds = ["cp ./spts.conf %s/" % (d), "ln -s ../%s %s/frames.cxi" % (f,d), "cd %s; run_spts.py -v; cd .." % (d)]
     for cmd in cmds:
         print(cmd) 
         os.system(cmd)

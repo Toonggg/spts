@@ -16,15 +16,13 @@ import spts.worker
 
 # Add SPTS stream handler to other loggers
 import h5writer 
-#h5writer.logger.addHandler(spts._stream_handler)
-import mulpro
-#mulpro.logger.addHandler(spts._stream_handler)
 
-
+from mulpro import mulpro
 
 if __name__ == "__main__":
+    __spec__ = None
     parser = argparse.ArgumentParser(description='Mie scattering imaging data analysis')
-    parser.add_argument('-v', '--verbose', dest='verbose',  action='store_true', help='verbose mode', default=True)
+    parser.add_argument('-v', '--verbose', dest='verbose',  action='store_true', help='verbose mode', default=False)
     parser.add_argument('-d', '--debug', dest='debug',  action='store_true', help='debugging mode (even more output than in verbose mode)', default=False)
     parser.add_argument('-c','--cores', type=int, help='number of cores', default=1)
     parser.add_argument('-m','--mpi', dest='mpi', action='store_true', help='mpi processes = reader(s) + writer', default=False)

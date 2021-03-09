@@ -18,7 +18,7 @@ def log(logger, message, lvl, exception=None, rollback=1):
     # This should maybe go into a handler
     if (logger.getEffectiveLevel() >= logging.INFO) or rollback is None:
         # Short output
-        msg = "%s" % message
+        msg = "%s" % message 
     else:
         # Detailed output only in debug mode
         func = inspect.currentframe()

@@ -1,7 +1,7 @@
-#!/usr/bin/env python
+#!/usr/local/bin/python3
 import argparse
 import os,sys
-import OleFileIO_PL
+import olefile
 from struct import unpack
 import numpy as np
 
@@ -23,7 +23,7 @@ def cxd_to_h5(filename_cxd, filename_bg_cxd, filename_cxi, Nbg_max):
     R = CXDReader(filename_cxd)
 
     # Background
-    Rbg = None
+    Rbg = None 
     if filename_bg_cxd is not None:
         if filename_bg_cxd == filename_cxd:
             Rbg = R

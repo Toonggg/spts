@@ -6,8 +6,8 @@ import scipy.ndimage
 import logging
 logger = logging.getLogger(__name__)
 
-import log
-from log import log_debug, log_info, log_warning, log_and_raise_error
+import spts.log
+from spts.log import log_and_raise_error,log_warning,log_info,log_debug
 
 THUMBNAILS_WINDOW_SIZE_DEFAULT = 30
 

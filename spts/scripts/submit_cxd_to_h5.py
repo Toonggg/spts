@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/local/bin/python3
 import os,sys
 
 curdir = os.path.abspath(".")
