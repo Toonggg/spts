@@ -14,10 +14,9 @@ import spts
 import spts.camera
 from spts.camera import CXDReader
 
-def cxd_to_h5(filename_cxd, filename_bg_cxd, filename_cxi, Nbg_max, cropping, minx, maxx, miny, maxy):
+def cxd_to_h5(filename_cxd, filename_bg_cxd, filename_cxi, Nbg_max, filt_percent, filt_frames, cropping, minx, maxx, miny, maxy):
 
     # Initialise reader(s)
-
     # Data 
     print("Opening %s" % filename_cxd) 
     R = CXDReader(filename_cxd)     
@@ -34,20 +33,25 @@ def cxd_to_h5(filename_cxd, filename_bg_cxd, filename_cxi, Nbg_max, cropping, mi
         print("Collecting background frames...") 
         Nbg = min([Nbg_max, Rbg.get_number_of_frames()]) 
         for i in range(Nbg): 
-            frame = Rbg.get_frame(i) # dtype: uint16
+            frame = Rbg.get_frame(i) # dtype: uint16 
             if i == 0: 
-                #bg_stack = np.zeros(shape=(Nbg, frame.shape[0], frame.shape[1]), dtype=frame.dtype) # uncropped background stack 
-                bg_stack = np.zeros(shape=(Nbg, (maxy-miny), (maxx-minx)), dtype=frame.dtype) # cropped background stack 
-
-            bg_stack[i,:,:] = frame[miny:maxy, minx:maxx]   
-            #print(frame[minx:(maxx), miny:(maxy)].shape)
-            #print(bg_stack.shape)
+                if cropping: 
+                    shape = (Nbg, (maxy-miny), (maxx-minx))
+                    bg_stack = np.zeros(shape, dtype=frame.dtype) # cropped background stack 
+                    print("Cropping raw images...") 
+                else: 
+                    shape = (Nbg, frame.shape[0], frame.shape[1])
+                    bg_stack = np.zeros(shape, dtype=frame.dtype) # uncropped background stack
+                    print("Not cropping raw images...") 
+            if cropping: 
+                bg_stack[i,:,:] = frame[miny:maxy, minx:maxx]   
+            else: 
+                bg_stack[i,:,:] = frame 
             print('(%d/%d) filling buffer for background estimation ...' % (i+1, Nbg)) 
+
         # Calculate median from background stack => background image 
-        print("Calculating background estimate by median of buffer") 
-        #bg = np.percentile(bg_stack, q = args.percentile_number, axis = 0) # median over all frames ---> 2048 x 2048 float64 array 
-        bg = percentile_filter(bg_stack, args.percentile_number, size = (5, 5, 5)) 
-        #print(bg.shape) 
+        print("Calculating background estimate by median of buffer... ") 
+        bg = percentile_filter(bg_stack, filt_percent, size = (filt_frames, 5, 5)) 
     else: 
         bg = None 
 
@@ -90,17 +94,21 @@ def cxd_to_h5(filename_cxd, filename_bg_cxd, filename_cxi, Nbg_max, cropping, mi
         integrated_raw += np.asarray(image_raw, dtype='float32') 
         integratedsq_raw += np.asarray(image_raw, dtype='float32')**2
 
-        if bg is not None:
+        if bg is not None: 
             if integrated_image is None: 
-                #integrated_image = np.zeros(shape=frame.shape, dtype='float32') 
-                integrated_image = np.zeros(shape=((maxy-miny), (maxx-minx)), dtype='float32') 
+                if cropping:
+                    integrated_image = np.zeros(shape=((maxy-miny), (maxx-minx)), dtype='float32') 
+                else:     
+                    integrated_image = np.zeros(shape=frame.shape, dtype='float32') 
             if integratedsq_image is None:
-                #integratedsq_image = np.zeros(shape=frame.shape, dtype='float32') 
-                integratedsq_image = np.zeros(shape=((maxy-miny), (maxx-minx)), dtype='float32') 
+                if cropping:
+                    integratedsq_image = np.zeros(shape=((maxy-miny), (maxx-minx)), dtype='float32') 
+                else:
+                    integratedsq_image = np.zeros(shape=frame.shape, dtype='float32') 
             integrated_image += image_bgcor 
             integratedsq_image += np.asarray(image_bgcor, dtype='f')**2 
         
-    # Write integrated images
+    # Write integrated images 
     print('Writing integrated images...') 
     out = {"entry_1": {"data_1": {}, "image_1": {}}}
     if integrated_raw is not None: 
@@ -113,7 +121,7 @@ def cxd_to_h5(filename_cxd, filename_bg_cxd, filename_cxi, Nbg_max, cropping, mi
         out["entry_1"]["image_1"]["datasq_mean"] = integratedsq_image / float(N)
     W.write_solo(out)
 
-    print("Closing files...")
+    print("Closing files...") 
     # Close CXI file 
     W.close()
     # Close readers 
@@ -124,12 +132,14 @@ def cxd_to_h5(filename_cxd, filename_bg_cxd, filename_cxi, Nbg_max, cropping, mi
 
 if __name__ == "__main__":
 
-    ### If there is an uppercase "-" in an optional argument it is converted internally to a "_", so we acccess these arguments in code with a "_" as well!!! 
     parser = argparse.ArgumentParser(description='Conversion of CXD (Hamamatsu file format) to HDF5') 
     parser.add_argument('filename', type=str, help='CXD filename') 
     parser.add_argument('-b','--background-filename', type=str, help='CXD filename with photon background data.') 
+
     parser.add_argument('-p', '--percentile-number', type = int, help='Percentile value for percentile filter.', default = 50)
+    parser.add_argument('-pf','--percentile-frames', type=int, help='Number of frames in kernel for percentile filter.', default = 960) 
     parser.add_argument('-n','--bg-frames-max', type=int, help='Maximum number of frames used for background calculation.', default = 500) 
+
     parser.add_argument('-crop', '--crop-raw', action = 'store_true', help = 'Enable cropping of raw images.') 
     parser.add_argument('-minx','--min-x', type=int, help='Minimum x-coordinate of cropped raw data.', default = 960) 
     parser.add_argument('-maxx','--max-x', type=int, help='Maximum x-coordinate of cropped raw data.', default = 1300) 
@@ -141,7 +151,6 @@ if __name__ == "__main__":
 
     f = args.filename
 
-    ### If background file is supplied, do background subtraction - if not supplied, proceed as usual!!!
     BackgroundFileExists = bool(args.background_filename)
     if BackgroundFileExists == False: 
         f_bg = None 
@@ -153,15 +162,12 @@ if __name__ == "__main__":
             print("WARNING: File with background frames not found in location %s.\n\tFalling back to determining background from the real data frames." % f_bg)
             f_bg = f
 
-    ### If the output file name is not specified the original file name is used and .cxi is appended to it!!!
     if args.out_filename:
         f_out = args.out_filename
     else:
         f_out = f[:-4] + ".cxi"
-            
-    ### Checks whether given input file is in the correct .cxd format!!!
-    ### Call cxd_to_h5(); with f = filename_cxd, f_bg = filename_bg_cxd, f_out = filename_cxi, and arg.bg_frames_max = Nbg_max!!!
+
     if not args.filename.endswith(".cxd"):
         print("ERROR: Given filename %s does not end with \".cxd\". Wrong format!" % args.filename)
     else:
-        cxd_to_h5(f, f_bg, f_out, args.bg_frames_max, args.crop_raw, args.min_x, args.max_x, args.min_y, args.max_y)
+        cxd_to_h5(f, f_bg, f_out, args.bg_frames_max, args.percentile_number, args.percentile_frames, args.crop_raw, args.min_x, args.max_x, args.min_y, args.max_y)
