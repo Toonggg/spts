@@ -218,8 +218,10 @@ class Worker:
         i = work_package["i"]
         O = OutputCollector()
         image_raw = tmp_package["1_raw"]["image_raw"]
-        saturation_mask = tmp_package["1_raw"]["saturation_mask"]
+        saturation_mask = tmp_package["1_raw"]["saturation_mask"] 
+    
         image = tmp_package["2_process"]["image"]
+
         n_labels = tmp_package["5_detect"]["n"]
         i_labels = tmp_package["5_detect"]["i_labels"]
         i_labels = i_labels[i_labels != -1]
@@ -278,7 +280,7 @@ class Worker:
         image = self._read_image(i, dataset_name, np.int32)
         if saturation_level is not None:
             saturation_mask = image >= saturation_level
-        else:
+        else: 
             saturation_mask = None
         if subtract_constant is not None:
             image -= subtract_constant

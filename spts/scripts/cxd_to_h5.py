@@ -35,7 +35,7 @@ def cxd_to_h5(filename_cxd, filename_bg_cxd, filename_cxi, Nbg_max, filt_percent
         for i in range(Nbg): 
             frame = Rbg.get_frame(i) # dtype: uint16 
             if i == 0: 
-                if cropping: 
+                if cropping:  
                     shape = (Nbg, (maxy-miny), (maxx-minx))
                     bg_stack = np.zeros(shape, dtype=frame.dtype) # cropped background stack 
                     print("Cropping raw images...") 
@@ -51,7 +51,7 @@ def cxd_to_h5(filename_cxd, filename_bg_cxd, filename_cxi, Nbg_max, filt_percent
 
         # Calculate median from background stack => background image 
         print("Calculating background estimate by median of buffer... ") 
-        bg = percentile_filter(bg_stack, filt_percent, size = (filt_frames, 5, 5)) 
+        bg = percentile_filter(bg_stack, filt_percent, size = (filt_frames, 1, 1))  
     else: 
         bg = None 
 
@@ -65,13 +65,16 @@ def cxd_to_h5(filename_cxd, filename_bg_cxd, filename_cxi, Nbg_max, filt_percent
     integratedsq_image = None 
 
     # Write frames
-    N  = R.get_number_of_frames()
+    N  = R.get_number_of_frames() 
     for i in range(N):
 
         print('(%d/%d) Writing frame ...' % (i+1, N)) 
 
         frame = R.get_frame(i) 
-        image_raw = frame 
+        if cropping: 
+            image_raw = frame[miny:maxy, minx:maxx] 
+        else: 
+            image_raw = frame 
 
         out = {}
         out["entry_1"] = {}
@@ -88,11 +91,17 @@ def cxd_to_h5(filename_cxd, filename_bg_cxd, filename_cxi, Nbg_max, filt_percent
         W.write_slice(out)
             
         if integrated_raw is None:
-            integrated_raw = np.zeros(shape=frame.shape, dtype='float32')
+            if cropping: 
+                integrated_raw = np.zeros(shape=((maxy-miny), (maxx-minx)), dtype='float32')
+            else:
+                integrated_raw = np.zeros(shape=frame.shape, dtype='float32')
         if integratedsq_raw is None: 
-            integratedsq_raw = np.zeros(shape=frame.shape, dtype='float32')
+            if cropping: 
+                integratedsq_raw = np.zeros(shape=((maxy-miny), (maxx-minx)), dtype='float32')
+            else:
+                integratedsq_raw = np.zeros(shape=frame.shape, dtype='float32')
         integrated_raw += np.asarray(image_raw, dtype='float32') 
-        integratedsq_raw += np.asarray(image_raw, dtype='float32')**2
+        integratedsq_raw += np.asarray(image_raw, dtype='float32')**2 
 
         if bg is not None: 
             if integrated_image is None: 
@@ -136,8 +145,8 @@ if __name__ == "__main__":
     parser.add_argument('filename', type=str, help='CXD filename') 
     parser.add_argument('-b','--background-filename', type=str, help='CXD filename with photon background data.') 
 
-    parser.add_argument('-p', '--percentile-number', type = int, help='Percentile value for percentile filter.', default = 50)
-    parser.add_argument('-pf','--percentile-frames', type=int, help='Number of frames in kernel for percentile filter.', default = 960) 
+    parser.add_argument('-p', '--percentile-number', type = int, help='Percentile value for percentile filter.', default = 50) 
+    parser.add_argument('-pf','--percentile-frames', type=int, help='Number of frames in kernel for percentile filter.', default = 4) 
     parser.add_argument('-n','--bg-frames-max', type=int, help='Maximum number of frames used for background calculation.', default = 500) 
 
     parser.add_argument('-crop', '--crop-raw', action = 'store_true', help = 'Enable cropping of raw images.') 
