@@ -31,22 +31,23 @@ def cxd_to_h5(filename_cxd, filename_bg_cxd, filename_cxi, Nbg_max, filt_percent
             Rbg = CXDReader(filename_bg_cxd) 
         # Collect background stack 
         print("Collecting background frames...") 
-        Nbg = min([Nbg_max, Rbg.get_number_of_frames()]) 
+        Nbg = min([Nbg_max, Rbg.get_number_of_frames()])
+
         for i in range(Nbg): 
             frame = Rbg.get_frame(i) # dtype: uint16 
-            if i == 0: 
-                if cropping:  
-                    shape = (Nbg, (maxy-miny), (maxx-minx))
-                    bg_stack = np.zeros(shape, dtype=frame.dtype) # cropped background stack 
+            if i == 0:
+                if(cropping):
                     print("Cropping raw images...") 
-                else: 
-                    shape = (Nbg, frame.shape[0], frame.shape[1])
-                    bg_stack = np.zeros(shape, dtype=frame.dtype) # uncropped background stack
-                    print("Not cropping raw images...") 
-            if cropping: 
-                bg_stack[i,:,:] = frame[miny:maxy, minx:maxx]   
-            else: 
-                bg_stack[i,:,:] = frame 
+                else:
+                    print("Not cropping raw images...")
+                    minx = 0
+                    miny = 0
+                    maxy = frame.shape[0]
+                    maxx = frame.shape[1] 
+
+                shape = (Nbg, (maxy-miny), (maxx-minx))
+                bg_stack = np.zeros(shape, dtype=frame.dtype) # cropped background stack 
+            bg_stack[i,:,:] = frame[miny:maxy, minx:maxx]   
             print('(%d/%d) filling buffer for background estimation ...' % (i+1, Nbg)) 
 
         # Calculate median from background stack => background image 
@@ -71,10 +72,7 @@ def cxd_to_h5(filename_cxd, filename_bg_cxd, filename_cxi, Nbg_max, filt_percent
         print('(%d/%d) Writing frame ...' % (i+1, N)) 
 
         frame = R.get_frame(i) 
-        if cropping: 
-            image_raw = frame[miny:maxy, minx:maxx] 
-        else: 
-            image_raw = frame 
+        image_raw = frame[miny:maxy, minx:maxx] 
 
         out = {}
         out["entry_1"] = {}
@@ -91,29 +89,17 @@ def cxd_to_h5(filename_cxd, filename_bg_cxd, filename_cxi, Nbg_max, filt_percent
         W.write_slice(out)
             
         if integrated_raw is None:
-            if cropping: 
-                integrated_raw = np.zeros(shape=((maxy-miny), (maxx-minx)), dtype='float32')
-            else:
-                integrated_raw = np.zeros(shape=frame.shape, dtype='float32')
-        if integratedsq_raw is None: 
-            if cropping: 
-                integratedsq_raw = np.zeros(shape=((maxy-miny), (maxx-minx)), dtype='float32')
-            else:
-                integratedsq_raw = np.zeros(shape=frame.shape, dtype='float32')
+            integrated_raw = np.zeros(shape=((maxy-miny), (maxx-minx)), dtype='float32')
+        if integratedsq_raw is None:  
+            integratedsq_raw = np.zeros(shape=((maxy-miny), (maxx-minx)), dtype='float32')
         integrated_raw += np.asarray(image_raw, dtype='float32') 
         integratedsq_raw += np.asarray(image_raw, dtype='float32')**2 
 
         if bg is not None: 
             if integrated_image is None: 
-                if cropping:
-                    integrated_image = np.zeros(shape=((maxy-miny), (maxx-minx)), dtype='float32') 
-                else:     
-                    integrated_image = np.zeros(shape=frame.shape, dtype='float32') 
+                integrated_image = np.zeros(shape=((maxy-miny), (maxx-minx)), dtype='float32') 
             if integratedsq_image is None:
-                if cropping:
-                    integratedsq_image = np.zeros(shape=((maxy-miny), (maxx-minx)), dtype='float32') 
-                else:
-                    integratedsq_image = np.zeros(shape=frame.shape, dtype='float32') 
+                integratedsq_image = np.zeros(shape=((maxy-miny), (maxx-minx)), dtype='float32') 
             integrated_image += image_bgcor 
             integratedsq_image += np.asarray(image_bgcor, dtype='f')**2 
         
