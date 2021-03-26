@@ -11,14 +11,14 @@ from spts.log import log_and_raise_error,log_warning,log_info,log_debug
 
 THUMBNAILS_WINDOW_SIZE_DEFAULT = 30
 
-def analyse_particles(image, image_raw, saturation_mask, i_labels, labels, x, y, merged, n_particles_max, full_output, **conf_analysis):
+def analyse_particles(input, saturation_mask, i_labels, labels, x, y, merged, n_particles_max, full_output, **conf_analysis):
 
     if full_output:            
-        masked_image = np.zeros_like(image_raw)
+        masked_image = np.zeros_like(input)
         if conf_analysis["integration_mode"] == "windows":
-            thumbnails = np.zeros(shape=(n_particles_max, conf_analysis["window_size"], conf_analysis["window_size"]), dtype = image.dtype) 
+            thumbnails = np.zeros(shape=(n_particles_max, conf_analysis["window_size"], conf_analysis["window_size"]), dtype = input.dtype) 
         else:
-            thumbnails = np.zeros(shape=(n_particles_max, THUMBNAILS_WINDOW_SIZE_DEFAULT, THUMBNAILS_WINDOW_SIZE_DEFAULT), dtype = image.dtype) 
+            thumbnails = np.zeros(shape=(n_particles_max, THUMBNAILS_WINDOW_SIZE_DEFAULT, THUMBNAILS_WINDOW_SIZE_DEFAULT), dtype = input.dtype) 
     else:
         masked_image = None 
         thumbnails = None 
@@ -48,14 +48,14 @@ def analyse_particles(image, image_raw, saturation_mask, i_labels, labels, x, y,
         pixels = i_label == labels 
         psat[i]  = (pixels * saturation_mask).any() 
         psize[i] = pixels.sum() 
-        pecc[i] = measure_eccentricity(intensity=image*pixels, mask=pixels) 
+        pecc[i] = measure_eccentricity(intensity=input*pixels, mask=pixels) 
         pcir[i] = measure_circumference(pixels) 
         
         if conf_analysis["integration_mode"] == "windows": 
-            values = get_values_window(image_raw, int(round(x_i)), int(round(y_i)), window_size=conf_analysis["window_size"], circle_window=conf_analysis["circle_window"], i=i, 
+            values = get_values_window(input, int(round(x_i)), int(round(y_i)), window_size=conf_analysis["window_size"], circle_window=conf_analysis["circle_window"], i=i, 
                                        masked_image=masked_image, thumbnails=thumbnails) 
         elif conf_analysis["integration_mode"] == "labels":    
-            values = get_values_label(image_raw, labels, i_label, 
+            values = get_values_label(input, labels, i_label, 
                                       masked_image=masked_image, thumbnails=thumbnails) 
         else:
             log_and_raise_error(logger, "%s is not a valid integration_mode!" % conf_analysis["integration_mode"]) 

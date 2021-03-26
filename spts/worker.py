@@ -217,10 +217,8 @@ class Worker:
     def _work_analyse(self, work_package, tmp_package, out_package):
         i = work_package["i"]
         O = OutputCollector()
-        image_raw = tmp_package["1_raw"]["image_raw"]
         saturation_mask = tmp_package["1_raw"]["saturation_mask"] 
-    
-        image = tmp_package["2_process"]["image"]
+        image_processed = tmp_package["2_process"]["image"]
 
         n_labels = tmp_package["5_detect"]["n"]
         i_labels = tmp_package["5_detect"]["i_labels"]
@@ -232,8 +230,7 @@ class Worker:
         y = y[y != -1]
         merged = tmp_package["5_detect"]["merged"]
         n_max = self.conf["detect"]["n_particles_max"]
-        res = spts.analysis.analyse_particles(image=image,
-                                             image_raw=image_raw,
+        res = spts.analysis.analyse_particles(input=image_processed,
                                              saturation_mask=saturation_mask,
                                              i_labels=i_labels,
                                              labels=image_labels,
