@@ -36,6 +36,5 @@ Install additional dependencies not included in the `setup.py` script using `pip
 * [typing](https://pypi.org/project/typing/)
 
 ## TO-DOs 
-* Add median-subtraction on raw files without providing additional background recording. 
 * In the `analysis.py` function, label integration method doesn't work yet. This needs to be looked into in the future,
 so that when this is used, it works... 
