@@ -15,17 +15,17 @@ import pyqtgraph as pg
 
 from expiringdict import ExpiringDict
 
-import ui
+from . import ui
 
 # MSI modules 
 import worker
 
-from spts_conf import Conf
-from options import Options
-from view import View, ViewOptions
-from preferences import Preferences
+from .spts_conf import Conf
+from .options import Options
+from .view import View, ViewOptions
+from .preferences import Preferences
 
-from dummy_worker import DummyWorker
+from .dummy_worker import DummyWorker
 
 #from IPython.core.debugger import Tracer
 #Tracer()()
