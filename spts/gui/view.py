@@ -56,6 +56,8 @@ class View(pg.GraphicsView):
         self.box.addItem(self.image)
 
         self.circles = []
+        self.setMouseTracking(True)
+        self.scene().sigMouseMoved.connect(self.mouseMovedEvent)
         
     def show_image(self, image, force_auto_range=None, force_cmap=None):
         if image is None:
@@ -68,7 +70,7 @@ class View(pg.GraphicsView):
         else:
             args["autoLevels"] = True
         self.image.setImage(np.asarray(image, dtype=np.float64), **args)
-
+        self.data = np.asarray(image, dtype=np.float64)
         if force_cmap is not None:
             Ncol = 256
             pos = np.linspace(0., 1., Ncol)
@@ -110,6 +112,13 @@ class View(pg.GraphicsView):
             self.show_image(self.image.image)
         else:
             self.image.setLevels([vmin, vmax])
+
+    def mouseMovedEvent(self, pos):
+        mousePoint = self.box.mapSceneToView(pos)
+        x_i = round(mousePoint.x())
+        y_i = round(mousePoint.y())
+        if x_i > 0 and x_i < self.data.shape[0] and y_i > 0 and y_i < self.data.shape[1]:
+            self.w.statusBar().showMessage("({}, {}) = {:0.2f}".format(x_i, y_i, self.data[x_i, y_i]),2000)
 
 
 class CircleOverlay(pg.EllipseROI):
