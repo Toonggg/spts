@@ -63,6 +63,7 @@ class MainWindow(ui.MainUI, ui.MainBaseUI):
         self.ui.actionOpen.triggered.connect(self.conf.open)
         self.ui.actionSave.triggered.connect(self.conf.save)
         self.ui.actionSaveAs.triggered.connect(self.conf.save_as)
+        self.ui.actionOpen_Data.triggered.connect(self.options.general_box._on_open_data)
         self.ui.actionPreferences.triggered.connect(self.preferences.open_preferences_dialog)
         self.ui.dataTypeTabWidget.currentChanged.connect(self._on_tab_changed)
 
@@ -229,8 +230,8 @@ def main():
     mainWindow = MainWindow()
     mainWindow.show()
 
-    if len(sys.argv) > 1:
-        mainWindow.conf.load(sys.argv[1])
+    #if len(sys.argv) > 1:
+    #    mainWindow.conf.load(sys.argv[1])
 
     sys.exit(app.exec_())
     
