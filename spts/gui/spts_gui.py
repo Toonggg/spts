@@ -49,6 +49,9 @@ class MainWindow(ui.MainUI, ui.MainBaseUI):
         self.clear_cache()
         
         self.conf = Conf(self)
+
+        self.read_settings()
+
         self.i_frame = 0
         self.data_type = "1_raw"
         self._create_worker(silent=True)
@@ -221,7 +224,22 @@ class MainWindow(ui.MainUI, ui.MainBaseUI):
                 return event.ignore()
         self.preferences.closeEvent()
         self.view_options.closeEvent()
+
+        settings = QtCore.QSettings("biox.io", "spts")
+        settings.setValue("geometry", self.saveGeometry())
+        settings.setValue("windowState", self.saveState())
+        settings.setValue("conf", dict(self.conf))
+
         QtGui.QMainWindow.closeEvent(self, event)
+
+    def read_settings(self):
+        settings = QtCore.QSettings("biox.io", "spts")
+        self.restoreGeometry(settings.value("geometry"))
+        self.restoreState(settings.value("windowState"))
+        d = settings.value("conf")
+        if d is not None:
+            for k, v in d.items():
+                self.conf[k] = v
 
 def main():
     app = QtGui.QApplication(sys.argv)
