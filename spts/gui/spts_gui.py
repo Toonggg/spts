@@ -15,17 +15,17 @@ import pyqtgraph as pg
 
 from expiringdict import ExpiringDict
 
-from . import ui
+import ui
 
 # MSI modules 
 import worker
 
-from .spts_conf import Conf
-from .options import Options
-from .view import View, ViewOptions
-from .preferences import Preferences
+from spts_conf import Conf
+from options import Options
+from view import View, ViewOptions
+from preferences import Preferences
 
-from .dummy_worker import DummyWorker
+from dummy_worker import DummyWorker
 
 #from IPython.core.debugger import Tracer
 #Tracer()()
@@ -234,8 +234,6 @@ class MainWindow(ui.MainUI, ui.MainBaseUI):
 
     def read_settings(self):
         settings = QtCore.QSettings("biox.io", "spts")
-        self.restoreGeometry(settings.value("geometry"))
-        self.restoreState(settings.value("windowState"))
         d = settings.value("conf")
         if d is not None:
             for k, v in d.items():

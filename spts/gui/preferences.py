@@ -2,7 +2,7 @@ import numpy as np
 
 from PyQt5 import QtCore, QtGui, uic
 
-from . import ui
+import ui
 
 class Preferences:
 
