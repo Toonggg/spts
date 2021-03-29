@@ -45,7 +45,7 @@ class GeneralBox:
         self.outputLevelComboBox = self.w.ui.outputLevelComboBox
 
     def connect_all(self):
-        self.dataFilenameLineEdit.returnPressed.connect(self._set_filename)
+        self.dataFilenameLineEdit.editingFinished.connect(self._set_filename)
         self.i0SpinBox.valueChanged.connect(self._on_i0_changed)
         self.nFramesSpinBox.valueChanged.connect(self._on_n_frames_changed)
         self.outputLevelComboBox.currentIndexChanged.connect(self._on_output_level_changed)
@@ -75,6 +75,15 @@ class GeneralBox:
 
     def _on_output_level_changed(self):
         self.w.conf["general"]["output_level"] = self.outputLevelComboBox.currentIndex()
+
+    def _on_open_data(self):
+        filename = QtGui.QFileDialog.getOpenFileName(self.w, "Open CXI data file", "", "CXI Files (*.cxi)")
+        if isinstance(filename, tuple):
+            if filename[0]:
+                filename = filename[0]
+        if filename:
+            self.dataFilenameLineEdit.setText(filename)
+            self._set_filename()
 
 names_data_types = ["1_raw", "2_process", "3_denoise", "4_threshold", "5_detect", "6_analyse"]
         
