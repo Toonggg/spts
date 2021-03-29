@@ -234,6 +234,12 @@ class MainWindow(ui.MainUI, ui.MainBaseUI):
 
     def read_settings(self):
         settings = QtCore.QSettings("biox.io", "spts")
+        geo = settings.value("geometry")
+        if geo is not None:
+            self.restoreGeometry(geo)
+        win = settings.value("windowState")
+        if win is not None:
+            self.restoreState(win)
         d = settings.value("conf")
         if d is not None:
             for k, v in d.items():
