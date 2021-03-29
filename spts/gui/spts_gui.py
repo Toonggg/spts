@@ -1,7 +1,5 @@
 import os
 import sys
-this_dir = os.path.dirname(os.path.realpath(__file__))
-sys.path.insert(0, "%s/../" % this_dir)
 
 import logging
 logging.basicConfig()
@@ -15,17 +13,17 @@ import pyqtgraph as pg
 
 from expiringdict import ExpiringDict
 
-import ui
+import spts.gui.ui as ui
 
 # MSI modules 
-import worker
+import spts.worker as worker
 
-from spts_conf import Conf
-from options import Options
-from view import View, ViewOptions
-from preferences import Preferences
+from spts.gui.spts_conf import Conf
+from spts.gui.options import Options
+from spts.gui.view import View, ViewOptions
+from spts.gui.preferences import Preferences
 
-from dummy_worker import DummyWorker
+from spts.gui.dummy_worker import DummyWorker
 
 #from IPython.core.debugger import Tracer
 #Tracer()()
