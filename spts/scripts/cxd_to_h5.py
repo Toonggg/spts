@@ -14,7 +14,7 @@ import spts
 import spts.camera
 from spts.camera import CXDReader
 
-def cxd_to_h5(filename_cxd, filename_bg_cxd, filename_cxi, Nbg_max, filt_percent, filt_frames, cropping, minx, maxx, miny, maxy):
+def cxd_to_h5(filename_cxd, filename_bg_cxd, filename_cxi, Nbg_max, filt_percent, filt_frames, cropping, minx, maxx, miny, maxy): 
 
     # Initialise reader(s)
     # Data 
@@ -39,9 +39,9 @@ def cxd_to_h5(filename_cxd, filename_bg_cxd, filename_cxi, Nbg_max, filt_percent
                 if(cropping):
                     print("Cropping raw images...") 
                 else:
-                    print("Not cropping raw images...")
-                    minx = 0
-                    miny = 0
+                    print("Not cropping raw images...") 
+                    minx = 0 
+                    miny = 0 
                     maxy = frame.shape[0]
                     maxx = frame.shape[1] 
 
@@ -74,8 +74,8 @@ def cxd_to_h5(filename_cxd, filename_bg_cxd, filename_cxi, Nbg_max, filt_percent
         frame = R.get_frame(i) 
         image_raw = frame[miny:maxy, minx:maxx] 
 
-        out = {}
-        out["entry_1"] = {}
+        out = {} 
+        out["entry_1"] = {} 
 
         # Raw data 
         out["entry_1"]["data_1"] = {"data": image_raw}
@@ -132,14 +132,14 @@ if __name__ == "__main__":
     parser.add_argument('-b','--background-filename', type=str, help='CXD filename with photon background data.') 
 
     parser.add_argument('-p', '--percentile-number', type = int, help='Percentile value for percentile filter.', default = 50) 
-    parser.add_argument('-pf','--percentile-frames', type=int, help='Number of frames in kernel for percentile filter.', default = 4) 
-    parser.add_argument('-n','--bg-frames-max', type=int, help='Maximum number of frames used for background calculation.', default = 500) 
+    parser.add_argument('-pf','--percentile-frames', type=int, help='Number of frames in kernel for percentile filter.', default = 10) 
+    parser.add_argument('-n','--bg-frames-max', type=int, help='Maximum number of frames used for background calculation.', default = 5000) 
 
     parser.add_argument('-crop', '--crop-raw', action = 'store_true', help = 'Enable cropping of raw images.') 
-    parser.add_argument('-minx','--min-x', type=int, help='Minimum x-coordinate of cropped raw data.', default = 960) 
-    parser.add_argument('-maxx','--max-x', type=int, help='Maximum x-coordinate of cropped raw data.', default = 1300) 
-    parser.add_argument('-miny','--min-y', type=int, help='Minimum y-coordinate of cropped raw data.', default = 400) 
-    parser.add_argument('-maxy','--max-y', type=int, help='Maximum y-coordinate of cropped raw data.', default = 900) 
+    parser.add_argument('-minx','--min-x', type=int, help='Minimum x-coordinate of cropped raw data.', default = 0) 
+    parser.add_argument('-maxx','--max-x', type=int, help='Maximum x-coordinate of cropped raw data.', default = 2000) 
+    parser.add_argument('-miny','--min-y', type=int, help='Minimum y-coordinate of cropped raw data.', default = 0) 
+    parser.add_argument('-maxy','--max-y', type=int, help='Maximum y-coordinate of cropped raw data.', default = 2000) 
     parser.add_argument('-o','--out-filename', type=str, help='destination file') 
     
     args = parser.parse_args()
