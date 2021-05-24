@@ -121,17 +121,17 @@ def estimate_flatfield(flatfield_filename, ff_frames_max, bg):
     frame = R.get_frame(0) # dtype: uint16
 
     if bg is None:
-        print("Warning: Background informaton is missing. Using median of the edges of the 1st frame as background.")
-        bg = np.median(np.concatenate((frame[0,:], frame[-1,:], frame[:,0], frame[:,-1])))
+        print("Warning: Background informaton is missing. Using median the 1st frame as background.")
+        bg = np.median(frame.flatten())
 
     shape = (N, frame.shape[0], frame.shape[1])
-    ff_stack = np.zeros(shape, dtype=np.float16) # background stack
+    ff_stack = np.zeros(shape, dtype=np.float32) # background stack
 
     com_stack = np.zeros((N,2))
     for i in range(N): 
         frame = R.get_frame(i) # dtype: uint16            
-        ff_stack[i,:,:] = frame[:, :]-bg
-        com_stack[i] = scipy.ndimage.center_of_mass(frame)
+        ff_stack[i,:,:] = np.ndarray.astype(frame, dtype = 'float32') - bg
+        com_stack[i] = scipy.ndimage.center_of_mass(ff_stack[i])
 
     print("Calculating flatfield correction estimate by median of buffer... ") 
     ff = np.median(ff_stack, axis=0)
@@ -158,16 +158,16 @@ def estimate_flatfield(flatfield_filename, ff_frames_max, bg):
     print("Writing report to %s..." % (report_fname), end = '') 
     fig, ax = plt.subplots(2,2,figsize=(20,14))
     fig.suptitle('Flatfield report for %s' % (flatfield_filename), fontsize=16)
-    pos = ax[0][0].imshow(ff,vmin=0,vmax=np.percentile(ff.flatten(), 95))
+    pos = ax[0][0].imshow(ff,vmin=0, vmax=np.percentile(ff.flatten(), 99.99))
     ax[0][0].set_title('Median frame')
     fig.colorbar(pos, ax=ax[0][0])
-    pos = ax[0][1].imshow(ff_std,vmin=0,vmax=np.percentile(ff_std.flatten(), 95))
+    pos = ax[0][1].imshow(ff_std,vmin=0, vmax=np.percentile(ff_std.flatten(), 99.99))
     ax[0][1].set_title('Per pixel std deviation')
     fig.colorbar(pos, ax=ax[0][1])
     ax[1][0].plot(np.mean(ff_stack, axis=(1,2)))
     ax[1][0].set_title('Mean intensity by frame')
     ff_stack_mean = np.mean(ff_stack,axis=0)
-    pos = ax[1][1].imshow(ff_stack_mean, vmin=0, vmax=np.percentile(ff_stack_mean.flatten(), 95))
+    pos = ax[1][1].imshow(ff_stack_mean, vmin=0, vmax=np.percentile(ff_stack_mean.flatten(), 99.99))
     ax[1][1].set_title('Mean frame')
     fig.colorbar(pos, ax=ax[1][1])
     plt.savefig(report_fname, dpi=300)
