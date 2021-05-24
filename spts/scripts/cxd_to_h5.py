@@ -130,14 +130,13 @@ def estimate_flatfield(flatfield_filename, ff_frames_max, bg):
     com_stack = np.zeros((N,2))
     for i in range(N): 
         frame = R.get_frame(i) # dtype: uint16            
-        ff_stack[i,:,:] = frame[:, :]-bg
+        ff_stack[i,:,:] = frame[:, :]
+        # ff_stack[i,:,:] = frame[:, :]-bg
         com_stack[i] = scipy.ndimage.center_of_mass(frame)
 
     print("Calculating flatfield correction estimate by median of buffer... ") 
     ff = np.median(ff_stack, axis=0)
     ff_std = np.std(ff_stack, axis=0)
-    if(bg is not None):
-        ff -= bg
     ff_mean = np.mean(ff)
     print("Mean of all pixels in median flatfield = %.0f" % (ff_mean))
     print("Std dev of all pixels in median flatfield = %.0f" % (np.std(ff)))
@@ -159,14 +158,18 @@ def estimate_flatfield(flatfield_filename, ff_frames_max, bg):
     report_fname = flatfield_filename[:-4]+"_report.png"
     print("Writing report to %s..." % (report_fname), end = '') 
     fig, ax = plt.subplots(2,2,figsize=(20,14))
+    fig.suptitle('Flatfield report for %s' % (flatfield_filename), fontsize=16)
     pos = ax[0][0].imshow(ff)
     ax[0][0].set_title('Median frame')
     fig.colorbar(pos, ax=ax[0][0])
-    ax[0][1].imshow(ff_std)
+    pos = ax[0][1].imshow(ff_std)
     ax[0][1].set_title('Per pixel std deviation')
     fig.colorbar(pos, ax=ax[0][1])
     ax[1][0].plot(np.mean(ff_stack, axis=(1,2)))
     ax[1][0].set_title('Mean intensity by frame')
+    pos = ax[1][1].imshow(np.mean(ff_stack,axis=0))
+    ax[1][1].set_title('Mean frame')
+    fig.colorbar(pos, ax=ax[1][1])
     plt.savefig(report_fname, dpi=300)
     try:
         plt.show()
