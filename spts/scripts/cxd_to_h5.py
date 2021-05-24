@@ -159,10 +159,10 @@ def estimate_flatfield(flatfield_filename, ff_frames_max, bg):
     report_fname = flatfield_filename[:-4]+"_report.png"
     print("Writing report to %s..." % (report_fname), end = '') 
     fig, ax = plt.subplots(2,2,figsize=(20,14))
-    pos = ax[0][0].imshow(ff,vmin=0,vmax=200)
+    pos = ax[0][0].imshow(ff)
     ax[0][0].set_title('Median frame')
     fig.colorbar(pos, ax=ax[0][0])
-    ax[0][1].imshow(ff_std,vmin=0,vmax=200)
+    ax[0][1].imshow(ff_std)
     ax[0][1].set_title('Per pixel std deviation')
     fig.colorbar(pos, ax=ax[0][1])
     ax[1][0].plot(np.mean(ff_stack, axis=(1,2)))
