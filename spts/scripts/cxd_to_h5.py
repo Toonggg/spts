@@ -17,12 +17,15 @@ from spts.camera import CXDReader
 import matplotlib.pyplot as plt
 
 
-def estimate_background(filename_bg_cxd, bg_frames_max):
+def estimate_background(filename_bg_cxd, bg_frames_max, filename):
+    print("*************************************")
+    print("*   Background correction section   *")
+    print("*************************************")
     if(filename_bg_cxd is None):
-        filename_bg_cxd = filename_bg_cxd[:-4] + "_bg.cxd"
+        filename_bg_cxd = filename[:-4] + "_bg.cxd"
         if not os.path.isfile(filename_bg_cxd):        
             print("Background file missing!")            
-            return None
+            return None,None
 
     f_cache = filename_bg_cxd[:-4] + '_bg_' + str(bg_frames_max) + ".h5"
     bg = None
@@ -87,11 +90,14 @@ def estimate_background(filename_bg_cxd, bg_frames_max):
 
 
 def estimate_flatfield(flatfield_filename, ff_frames_max, bg):
+    print("*************************************")
+    print("*   Flat field correction section   *")
+    print("*************************************")
     if(flatfield_filename is None):
         flatfield_filename = flatfield_filename[:-4] + "_ff.cxd"
         if not os.path.isfile(flatfield_filename):        
             print("Flat field file missing!")            
-            return None
+            return None,None
 
     f_cache = flatfield_filename[:-4] + '_ff_' + str(ff_frames_max) + ".h5"
     ff = None
@@ -107,21 +113,24 @@ def estimate_flatfield(flatfield_filename, ff_frames_max, bg):
         pass
 
 
-    print("Collecting flat-field frames...")    
+    print("Collecting flat-field frames...")
+        
 
-    R = CXDReader(flatfield_filename) 
+    R = CXDReader(flatfield_filename)
     N = min([ff_frames_max, R.get_number_of_frames()])
+    frame = R.get_frame(0) # dtype: uint16
+
+    if bg is None:
+        print("Warning: Background informaton is missing. Using median of the edges of the 1st frame as background.")
+        bg = np.median(np.concatenate((frame[0,:], frame[-1,:], frame[:,0], frame[:,-1])))
+
+    shape = (N, frame.shape[0], frame.shape[1])
+    ff_stack = np.zeros(shape, dtype=frame.dtype) # background stack
+
     com_stack = np.zeros((N,2))
     for i in range(N): 
-        frame = R.get_frame(i) # dtype: uint16
-
-        if i == 0:
-            shape = (N, frame.shape[0], frame.shape[1])
-            ff_stack = np.zeros(shape, dtype=frame.dtype) # background stack
-            
-        ff_stack[i,:,:] = frame[:, :]
-        if(bg is not None):
-            frame = frame-bg
+        frame = R.get_frame(i) # dtype: uint16            
+        ff_stack[i,:,:] = frame[:, :]-bg
         com_stack[i] = scipy.ndimage.center_of_mass(frame)
 
     print("Calculating flatfield correction estimate by median of buffer... ") 
@@ -145,10 +154,32 @@ def estimate_flatfield(flatfield_filename, ff_frames_max, bg):
     f.create_dataset('ff', data=ff)
     f.create_dataset('ff_std', data=ff_std)
     f.close()
+
+    # Make a small report
+    report_fname = flatfield_filename[:-4]+"_report.png"
+    print("Writing report to %s..." % (report_fname), end = '') 
+    fig, ax = plt.subplots(2,2,figsize=(20,14))
+    pos = ax[0][0].imshow(ff,vmin=0,vmax=200)
+    ax[0][0].set_title('Median frame')
+    fig.colorbar(pos, ax=ax[0][0])
+    ax[0][1].imshow(ff_std,vmin=0,vmax=200)
+    ax[0][1].set_title('Per pixel std deviation')
+    fig.colorbar(pos, ax=ax[0][1])
+    ax[1][0].plot(np.mean(ff_stack, axis=(1,2)))
+    ax[1][0].set_title('Mean intensity by frame')
+    plt.savefig(report_fname, dpi=300)
+    try:
+        plt.show()
+    except:
+        pass
+
+    print("done")
+
     return ff,ff_std
 
 def guess_ROI(ff):
     if(ff is None):
+        print("Cannot guess ROI, dlat field information missing!")            
         return (slice(None),slice(None))
     
     ff_y = np.sum(ff,axis=1)
@@ -191,7 +222,9 @@ def guess_ROI(ff):
     
 
 def cxd_to_h5(filename_cxd,  bg, ff, roi, filename_cxi, do_percent_filter, filt_percent, filt_frames, cropping, minx, maxx, miny, maxy):
-
+    print("*************************************")
+    print("*   Particle conversion section     *")
+    print("*************************************")
     # Initialise reader(s)
     # Data 
     print("Opening %s" % filename_cxd) 
@@ -286,6 +319,7 @@ def cxd_to_h5(filename_cxd,  bg, ff, roi, filename_cxi, do_percent_filter, filt_
         out["entry_1"]["image_1"]["datasq_mean"] = integratedsq_image / float(N)
 
     if bg is not None:
+        print("bg = ",bg)
         out["entry_1"]["image_1"]["bg_fullframe"] = bg
         out["entry_1"]["image_1"]["bg"] = bg[roi]
     if ff is not None:
@@ -293,8 +327,6 @@ def cxd_to_h5(filename_cxd,  bg, ff, roi, filename_cxi, do_percent_filter, filt_
         out["entry_1"]["image_1"]["ff"] = ff[roi]        
     W.write_solo(out)
     print('done.')
-    # Close CXI file 
-    W.close()
     # Close readers 
     R.close()
 
@@ -303,8 +335,10 @@ def cxd_to_h5(filename_cxd,  bg, ff, roi, filename_cxi, do_percent_filter, filt_
     print("Writing report to %s..." % (report_fname), end = '') 
 
     fig, ax = plt.subplots(2,1,figsize=(20,14))
-    ax[0].imshow(bg[roi])
-    ax[1].imshow(ff[roi])
+    if bg is not None:
+        ax[0].imshow(bg[roi])
+    if ff is not None:
+        ax[1].imshow(ff[roi])
     plt.savefig(report_fname)
     
     print("done.")
@@ -345,9 +379,18 @@ if __name__ == "__main__":
     W = h5writer.H5Writer(f_out) 
 
         
-    bg,bg_std = estimate_background(args.background_filename, args.bg_frames_max)
+    bg,bg_std = estimate_background(args.background_filename, args.bg_frames_max, args.filename)
     ff,ff_std = estimate_flatfield(args.flatfield_filename, args.ff_frames_max, bg)
     roi = guess_ROI(ff)
      
             
     cxd_to_h5(args.filename, bg, ff, roi, W, args.percentile_filter, args.percentile_number, args.percentile_frames, args.crop_raw, args.min_x, args.max_x, args.min_y, args.max_y)
+
+    # Write out information on the command used
+    out = {"entry_1": {"process_1": {}}}
+    out["entry_1"]["process_1"] = {"command": str(sys.argv)}
+    out["entry_1"]["process_1"] = {"cwd": str(os.getcwd())}
+    W.write_solo(out)
+    # Close CXI file 
+    W.close()
+
