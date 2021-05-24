@@ -125,13 +125,12 @@ def estimate_flatfield(flatfield_filename, ff_frames_max, bg):
         bg = np.median(np.concatenate((frame[0,:], frame[-1,:], frame[:,0], frame[:,-1])))
 
     shape = (N, frame.shape[0], frame.shape[1])
-    ff_stack = np.zeros(shape, dtype=frame.dtype) # background stack
+    ff_stack = np.zeros(shape, dtype=np.float16) # background stack
 
     com_stack = np.zeros((N,2))
     for i in range(N): 
         frame = R.get_frame(i) # dtype: uint16            
-        ff_stack[i,:,:] = frame[:, :]
-        # ff_stack[i,:,:] = frame[:, :]-bg
+        ff_stack[i,:,:] = frame[:, :]-bg
         com_stack[i] = scipy.ndimage.center_of_mass(frame)
 
     print("Calculating flatfield correction estimate by median of buffer... ") 
