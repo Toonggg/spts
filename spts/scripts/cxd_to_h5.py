@@ -25,7 +25,7 @@ def estimate_background(filename_bg_cxd, bg_frames_max, filename):
         filename_bg_cxd = filename[:-4] + "_bg.cxd"
         if not os.path.isfile(filename_bg_cxd):        
             print("Background file missing!")            
-            return None,None
+            return None,None,None
 
     f_cache = filename_bg_cxd[:-4] + '_bg_' + str(bg_frames_max) + ".h5"
     bg = None
@@ -34,9 +34,10 @@ def estimate_background(filename_bg_cxd, bg_frames_max, filename):
         print("Reading cached background from %s" % (f_cache))
         bg = f['bg'][:]
         bg_std = f['bg_std'][:]
+        good_pixels = f['good_pixels'][:]
         print("Mean over median background = %.0f" % (np.mean(bg)))
         print("Std dev over median background = %.0f" % (np.std(bg)))
-        return bg,bg_std
+        return bg,bg_std,good_pixels
     except OSError:
         pass
 
@@ -55,7 +56,17 @@ def estimate_background(filename_bg_cxd, bg_frames_max, filename):
     
     print("Calculating background estimate by median of buffer...", end='') 
     bg = np.median(bg_stack, axis=0)
+    print(bg.dtype)
     bg_std = np.std(bg_stack, axis=0)
+
+    # Use the standard deviation of the 50% middle values to find
+    # bad pixels
+    sort_bg = np.sort(bg.flatten())
+    middle_bg = sort_bg[round(len(sort_bg)/4):-round(len(sort_bg)/4)]
+    middle_std = np.std(middle_bg)
+    good_pixels = bg < np.mean(middle_bg)+middle_std*6
+    print("Found %d bad pixels" % (good_pixels==0).sum())
+    bg *= good_pixels
     print("done")
         
     print("Mean over median background = %.0f" % (np.mean(bg)))
@@ -64,20 +75,23 @@ def estimate_background(filename_bg_cxd, bg_frames_max, filename):
     f = h5py.File(f_cache,'w')
     f.create_dataset('bg', data=bg)
     f.create_dataset('bg_std', data=bg_std)
+    f.create_dataset('good_pixels', data=good_pixels)
     f.close()
 
     # Make a small report
     report_fname = filename_bg_cxd[:-4]+"_report.png"
     print("Writing report to %s..." % (report_fname), end = '') 
     fig, ax = plt.subplots(2,2,figsize=(20,14))
-    pos = ax[0][0].imshow(bg,vmin=0,vmax=200)
+    pos = ax[0][0].imshow(bg*good_pixels)
     ax[0][0].set_title('Median frame')
     fig.colorbar(pos, ax=ax[0][0])
-    ax[0][1].imshow(bg_std,vmin=0,vmax=200)
+    ax[0][1].imshow(bg_std*good_pixels)
     ax[0][1].set_title('Per pixel std deviation')
     fig.colorbar(pos, ax=ax[0][1])
-    ax[1][0].plot(np.mean(bg_stack, axis=(1,2)))
-    ax[1][0].set_title('Mean intensity by frame')
+    ax[1][0].imshow(good_pixels == 0)
+    ax[1][0].set_title('Bad pixels')
+    ax[1][1].plot(np.mean(bg_stack,axis=(1,2)))
+    ax[1][1].set_title('Mean intensity by frame')
     plt.savefig(report_fname, dpi=300)
     try:
         plt.show()
@@ -86,10 +100,10 @@ def estimate_background(filename_bg_cxd, bg_frames_max, filename):
 
     print("done")
     
-    return bg,bg_std
+    return bg,bg_std,good_pixels
 
 
-def estimate_flatfield(flatfield_filename, ff_frames_max, bg):
+def estimate_flatfield(flatfield_filename, ff_frames_max, bg, good_pixels):
     print("*************************************")
     print("*   Flat field correction section   *")
     print("*************************************")
@@ -119,7 +133,10 @@ def estimate_flatfield(flatfield_filename, ff_frames_max, bg):
     R = CXDReader(flatfield_filename)
     N = min([ff_frames_max, R.get_number_of_frames()])
     frame = R.get_frame(0) # dtype: uint16
-
+    if(good_pixels is None):
+        print("Warning: Good pixels informaton is missing. Using all the pixels.")
+        good_pixels = np.ones_like(frame)
+    
     if bg is None:
         print("Warning: Background informaton is missing. Using median the 1st frame as background.")
         bg = np.median(frame.flatten())
@@ -130,7 +147,7 @@ def estimate_flatfield(flatfield_filename, ff_frames_max, bg):
     com_stack = np.zeros((N,2))
     for i in range(N): 
         frame = R.get_frame(i) # dtype: uint16            
-        ff_stack[i,:,:] = np.ndarray.astype(frame, dtype = 'float32') - bg
+        ff_stack[i,:,:] = (np.ndarray.astype(frame, dtype = 'float32') - bg)*good_pixels
         com_stack[i] = scipy.ndimage.center_of_mass(ff_stack[i])
 
     print("Calculating flatfield correction estimate by median of buffer... ") 
@@ -158,16 +175,17 @@ def estimate_flatfield(flatfield_filename, ff_frames_max, bg):
     print("Writing report to %s..." % (report_fname), end = '') 
     fig, ax = plt.subplots(2,2,figsize=(20,14))
     fig.suptitle('Flatfield report for %s' % (flatfield_filename), fontsize=16)
-    pos = ax[0][0].imshow(ff,vmin=0, vmax=np.percentile(ff.flatten(), 99.99))
+    pos = ax[0][0].imshow(ff)
     ax[0][0].set_title('Median frame')
     fig.colorbar(pos, ax=ax[0][0])
-    pos = ax[0][1].imshow(ff_std,vmin=0, vmax=np.percentile(ff_std.flatten(), 99.99))
+    pos = ax[0][1].imshow(ff_std)
     ax[0][1].set_title('Per pixel std deviation')
     fig.colorbar(pos, ax=ax[0][1])
     ax[1][0].plot(np.mean(ff_stack, axis=(1,2)))
     ax[1][0].set_title('Mean intensity by frame')
     ff_stack_mean = np.mean(ff_stack,axis=0)
-    pos = ax[1][1].imshow(ff_stack_mean, vmin=0, vmax=np.percentile(ff_stack_mean.flatten(), 99.99))
+    #pos = ax[1][1].imshow(ff_stack_mean, vmin=0, vmax=np.percentile(ff_stack_mean.flatten(), 99.99))
+    pos = ax[1][1].imshow(ff_stack_mean)
     ax[1][1].set_title('Mean frame')
     fig.colorbar(pos, ax=ax[1][1])
     plt.savefig(report_fname, dpi=300)
@@ -224,7 +242,7 @@ def guess_ROI(ff):
 
     
 
-def cxd_to_h5(filename_cxd,  bg, ff, roi, filename_cxi, do_percent_filter, filt_percent, filt_frames, cropping, minx, maxx, miny, maxy):
+def cxd_to_h5(filename_cxd,  bg, ff, roi, good_pixels, filename_cxi, do_percent_filter, filt_percent, filt_frames, cropping, minx, maxx, miny, maxy):
     print("*************************************")
     print("*   Particle conversion section     *")
     print("*************************************")
@@ -349,7 +367,7 @@ def cxd_to_h5(filename_cxd,  bg, ff, roi, filename_cxi, do_percent_filter, filt_
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Conversion of CXD (Hamamatsu file format) to HDF5') 
-    parser.add_argument('filename', type=str, help='CXD filename of the particle scattering data.') 
+    parser.add_argument('filename', type=str, nargs='?', help='CXD filename of the particle scattering data.') 
     parser.add_argument('-b','--background-filename', type=str, help='CXD filename with photon background data (no injection).')
     parser.add_argument('-bn','--bg-frames-max', type=int, help='Maximum number of frames used for background calculation.', default = 100) 
 
@@ -369,6 +387,14 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
 
+    
+    bg,bg_std,good_pixels = estimate_background(args.background_filename, args.bg_frames_max, args.filename)
+    ff,ff_std = estimate_flatfield(args.flatfield_filename, args.ff_frames_max, bg, good_pixels)
+    roi = guess_ROI(ff)
+
+    if(args.filename is None):
+        sys.exit(0)
+        
     if not args.filename.endswith(".cxd"):
         print("ERROR: Given filename %s does not end with \".cxd\". Wrong format!" % args.filename)
         sys.exit(-1)
@@ -382,12 +408,9 @@ if __name__ == "__main__":
     W = h5writer.H5Writer(f_out) 
 
         
-    bg,bg_std = estimate_background(args.background_filename, args.bg_frames_max, args.filename)
-    ff,ff_std = estimate_flatfield(args.flatfield_filename, args.ff_frames_max, bg)
-    roi = guess_ROI(ff)
      
             
-    cxd_to_h5(args.filename, bg, ff, roi, W, args.percentile_filter, args.percentile_number, args.percentile_frames, args.crop_raw, args.min_x, args.max_x, args.min_y, args.max_y)
+    cxd_to_h5(args.filename, bg, ff, roi, good_pixels, W, args.percentile_filter, args.percentile_number, args.percentile_frames, args.crop_raw, args.min_x, args.max_x, args.min_y, args.max_y)
 
     # Write out information on the command used
     out = {"entry_1": {"process_1": {}}}
