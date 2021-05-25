@@ -15,6 +15,9 @@ import spts
 import spts.camera
 from spts.camera import CXDReader
 import matplotlib.pyplot as plt
+import matplotlib.cm
+import matplotlib.patches 
+from matplotlib.colors import LogNorm
 
 
 def estimate_background(filename_bg_cxd, bg_frames_max, filename):
@@ -198,47 +201,92 @@ def estimate_flatfield(flatfield_filename, ff_frames_max, bg, good_pixels):
 
     return ff,ff_std
 
-def guess_ROI(ff):
+def guess_ROI(ff, flatfield_filename, ff_low_limit, roi_fraction):
     if(ff is None):
         print("Cannot guess ROI, dlat field information missing!")            
         return (slice(None),slice(None))
-    
-    ff_y = np.sum(ff,axis=1)
-    ff_x = np.sum(ff,axis=0)
 
-    # We'll try to include 95% of the intensity in our ROI
+    ff_thres = ff.copy()
+    ff_thres[ff < ff_low_limit] = 0
+    
+    ff_y = np.sum(ff_thres,axis=1)
+    ff_x = np.sum(ff_thres,axis=0)
+
+    # We'll try to include roi_fraction of the intensity in our ROI
     com = scipy.ndimage.center_of_mass(ff_y)
-    com = round(com[0])
+    com_y = round(com[0])
     y_width = 1
-    while(ff_y.sum()*0.95 > ff_y[com-y_width:com+y_width].sum()):
+    while(ff_y.sum()*roi_fraction > ff_y[com_y-y_width:com_y+y_width].sum()):
         y_width += 1
     # And now we'll add some padding around
     pad = 20 # 20 px padding
-    ymin = com - y_width - pad
+    ymin = com_y - y_width - pad
     if(ymin < 0):
         ymin = 0
-    ymax = com + y_width + pad
+    ymax = com_y + y_width + pad
     if(ymax > ff.shape[0]):
         ymax = ff.shape[0]
 
     
     com = scipy.ndimage.center_of_mass(ff_x)
-    com = round(com[0])
+    com_x = round(com[0])
     x_width = 1
-    while(ff_x.sum()*0.95 > ff_x[com-x_width:com+x_width].sum()):
+    while(ff_x.sum()*roi_fraction > ff_x[com_x-x_width:com_x+x_width].sum()):
         x_width += 1
 
     # And now we'll add some padding around
     pad = 20 # 20 px padding
-    xmin = com - x_width - pad
+    xmin = com_x - x_width - pad
     if(xmin < 0):
         xmin = 0
-    xmax = com + x_width + pad
+    xmax = com_x + x_width + pad
     if(xmax > ff.shape[1]):
         xmax = ff.shape[1]
 
     print("Auto cropping to y = %d:%d x = %d:%d" % (ymin, ymax, xmin, xmax))
-    return (slice(ymin,ymax,None), slice(xmin,xmax,None))
+    roi = (slice(ymin,ymax,None), slice(xmin,xmax,None))
+    
+    # Make a small report
+    report_fname = flatfield_filename[:-4]+"_roi_report.pdf"
+    print("Writing report to %s..." % (report_fname), end = '') 
+    fig, ax = plt.subplots(2,2,figsize=(20,14))
+    fig.suptitle('Flatfield ROI report for %s' % (flatfield_filename), fontsize=16)
+    pos = ax[0][0].imshow(ff)
+    ax[0][0].set_title('Median frame')
+    # Create a Rectangle with the ROI
+    rect = matplotlib.patches.Rectangle((xmin, ymin), xmax-xmin+1, ymax-ymin+1, linewidth=1, edgecolor='w', facecolor='none',ls=':')
+    ax[0][0].add_patch(rect)
+    fig.colorbar(pos, ax=ax[0][0])
+    
+    import copy
+    # Use special colormap to avoid seeing value below 1
+    my_cmap = copy.copy(matplotlib.cm.get_cmap())
+    my_cmap.set_bad(my_cmap.colors[0])
+    pos = ax[0][1].imshow(ff,norm=LogNorm(vmin=1),cmap=my_cmap)
+    ax[0][1].set_title('Median frame (log scale)')
+    # Create a Rectangle with the ROI
+    rect = matplotlib.patches.Rectangle((xmin, ymin), xmax-xmin+1, ymax-ymin+1, linewidth=1, edgecolor='w', facecolor='none',ls=':')
+    ax[0][1].add_patch(rect)
+    fig.colorbar(pos, ax=ax[0][1])
+    ff_roi = ff[roi]
+    pos = ax[1][0].imshow(ff_roi)
+    ax[1][0].axvline(x=com_x-xmin,color='black',linestyle=':')
+    ax[1][0].axhline(y=com_y-ymin,color='black',linestyle=':')
+    ax[1][0].set_title('Median frame ROI')
+    fig.colorbar(pos, ax=ax[1][0])
+    ax[1][1].plot(ff_roi[round(com_y-ymin),:],label='horizontal')
+    ax[1][1].plot(ff_roi[:,round(com_x-xmin)],label='vertical')
+    ax[1][1].grid(True)
+    ax[1][1].legend(loc="upper right")
+    ax[1][1].set_title('Lineout through the center of ROI')
+    plt.savefig(report_fname)
+    try:
+        plt.show()
+    except:
+        pass
+
+    print("done")
+    return roi
 
     
 
@@ -375,7 +423,10 @@ if __name__ == "__main__":
     parser.add_argument('-bn','--bg-frames-max', type=int, help='Maximum number of frames used for background calculation.', default = 100) 
 
     parser.add_argument('-f','--flatfield-filename', type=str, help='CXD filename with flat field correction (laser on paper) data.')
-    parser.add_argument('-fn','--ff-frames-max', type=int, help='Maximum number of frames used for flatfield calculation.', default = 100) 
+    parser.add_argument('-fn','--ff-frames-max', type=int, help='Maximum number of frames used for flatfield calculation.', default = 100)
+
+    parser.add_argument('-rl','--roi-low-limit', type=int, help='Miminum intensity threshold for ROI calculations from flatfield.', default = 10)
+    parser.add_argument('-rf','--roi-fraction', type=int, help='Fraction of intensity above threshold to include in ROI.', default = 0.999) 
 
     parser.add_argument('-m', '--percentile-filter', action = 'store_true', help='Apply a percentile filter to output images.') 
     parser.add_argument('-p', '--percentile-number', type = int, help='Percentile value for percentile filter.', default = 50) 
@@ -393,7 +444,7 @@ if __name__ == "__main__":
     
     bg, bg_std, good_pixels = estimate_background(args.background_filename, args.bg_frames_max, args.filename)
     ff, ff_std = estimate_flatfield(args.flatfield_filename, args.ff_frames_max, bg, good_pixels)
-    roi = guess_ROI(ff)
+    roi = guess_ROI(ff, args.flatfield_filename, args.roi_low_limit, args.roi_fraction)
 
     if(args.filename is None):
         sys.exit(0)
