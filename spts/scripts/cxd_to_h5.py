@@ -82,7 +82,7 @@ def estimate_background(filename_bg_cxd, bg_frames_max, filename):
     f.close()
 
     # Make a small report
-    report_fname = filename_bg_cxd[:-4]+"_report.png"
+    report_fname = filename_bg_cxd[:-4]+"_bg_report.pdf"
     print("Writing report to %s..." % (report_fname), end = '') 
     fig, ax = plt.subplots(2,2,figsize=(20,14))
     pos = ax[0][0].imshow(bg*good_pixels)
@@ -95,7 +95,7 @@ def estimate_background(filename_bg_cxd, bg_frames_max, filename):
     ax[1][0].set_title('Bad pixels')
     ax[1][1].plot(np.mean(bg_stack,axis=(1,2)))
     ax[1][1].set_title('Mean intensity by frame')
-    plt.savefig(report_fname, dpi=300)
+    plt.savefig(report_fname)
     try:
         plt.show()
     except:
@@ -130,7 +130,7 @@ def estimate_flatfield(flatfield_filename, ff_frames_max, bg, good_pixels):
         pass
 
 
-    print("Collecting flat-field frames...")
+    print("Collecting flat-field frames...", end='')
         
 
     R = CXDReader(flatfield_filename)
@@ -153,16 +153,18 @@ def estimate_flatfield(flatfield_filename, ff_frames_max, bg, good_pixels):
         ff_stack[i,:,:] = (np.ndarray.astype(frame, dtype = 'float32') - bg)*good_pixels
         com_stack[i] = scipy.ndimage.center_of_mass(ff_stack[i])
 
-    print("Calculating flatfield correction estimate by median of buffer... ") 
+    print("done")
+    print("Calculating flatfield correction estimate by median of buffer... ", end='') 
     ff = np.median(ff_stack, axis=0)
     ff_std = np.std(ff_stack, axis=0)
     ff_mean = np.mean(ff)
+    print("done")
     print("Mean of all pixels in median flatfield = %.0f" % (ff_mean))
     print("Std dev of all pixels in median flatfield = %.0f" % (np.std(ff)))
     ff_mean_std = np.std(np.mean(ff_stack,axis=(1,2)))
     print("Std dev across frames of flatfield mean intensity = %.0f (%.1f%%)" % (ff_mean_std, 100.0 * ff_mean_std/ff_mean))
-    if(100.0 * ff_mean_std/ff_mean > 5):
-        print("Warning: Flatfield intensity is fluctuating more than 5% across frames!")
+    if(100.0 * ff_mean_std/ff_mean > 10):
+        print("Warning: Flatfield intensity is fluctuating more than 10% across frames!")
     com_mean = scipy.ndimage.center_of_mass(ff)
     print("Center of mass of median flatfield = %.0f,%.0f" % (com_mean[0], com_mean[1]))
     com_std = np.std(com_stack,axis=0)
@@ -174,7 +176,7 @@ def estimate_flatfield(flatfield_filename, ff_frames_max, bg, good_pixels):
     f.close()
 
     # Make a small report
-    report_fname = flatfield_filename[:-4]+"_report.png"
+    report_fname = flatfield_filename[:-4]+"_ff_report.pdf"
     print("Writing report to %s..." % (report_fname), end = '') 
     fig, ax = plt.subplots(2,2,figsize=(20,14))
     fig.suptitle('Flatfield report for %s' % (flatfield_filename), fontsize=16)
@@ -184,14 +186,20 @@ def estimate_flatfield(flatfield_filename, ff_frames_max, bg, good_pixels):
     pos = ax[0][1].imshow(ff_std)
     ax[0][1].set_title('Per pixel std deviation')
     fig.colorbar(pos, ax=ax[0][1])
+    
     ax[1][0].plot(np.mean(ff_stack, axis=(1,2)))
     ax[1][0].set_title('Mean intensity by frame')
     ff_stack_mean = np.mean(ff_stack,axis=0)
     #pos = ax[1][1].imshow(ff_stack_mean, vmin=0, vmax=np.percentile(ff_stack_mean.flatten(), 99.99))
-    pos = ax[1][1].imshow(ff_stack_mean)
-    ax[1][1].set_title('Mean frame')
+
+    import copy
+    # Use special colormap to avoid seeing value below 1
+    my_cmap = copy.copy(matplotlib.cm.get_cmap())
+    my_cmap.set_bad(my_cmap.colors[0])
+    pos = ax[1][1].imshow(ff,norm=LogNorm(vmin=1),cmap=my_cmap)
+    ax[1][1].set_title('Median frame (log scale)')
     fig.colorbar(pos, ax=ax[1][1])
-    plt.savefig(report_fname, dpi=300)
+    plt.savefig(report_fname)
     try:
         plt.show()
     except:
@@ -280,7 +288,9 @@ def guess_ROI(ff, flatfield_filename, ff_low_limit, roi_fraction):
     ax[1][1].legend(loc="upper right")
     ax[1][1].set_title('Lineout through the center of ROI')
 
-    plt.figtext(.05,.05,'ROI y = %d:%d x = %d:%d       Area above threshold (%d) = %d px' % (ymin, ymax, xmin, xmax, ff_low_limit, (ff_roi >ff_low_limit).sum()),fontsize=10,ha='left')
+    bottom_notes = 'ROI y = %d:%d x = %d:%d. ' % (ymin, ymax, xmin, xmax)
+    bottom_notes += 'Area above threshold (%d) = %d px. ' % (ff_low_limit, (ff_roi >ff_low_limit).sum())
+    plt.figtext(0.05, 0.05, bottom_notes, fontsize=10, ha='left')
     plt.savefig(report_fname)
     try:
         plt.show()
@@ -393,27 +403,47 @@ def cxd_to_h5(filename_cxd,  bg, ff, roi, good_pixels, filename_cxi, do_percent_
         out["entry_1"]["image_1"]["datasq_mean"] = integratedsq_image / float(N)
 
     if bg is not None:
-        print("bg = ",bg)
         out["entry_1"]["image_1"]["bg_fullframe"] = bg
         out["entry_1"]["image_1"]["bg"] = bg[roi]
     if ff is not None:
         out["entry_1"]["image_1"]["ff_fullframe"] = ff
-        out["entry_1"]["image_1"]["ff"] = ff[roi]        
+        out["entry_1"]["image_1"]["ff"] = ff[roi]
+
+    out["entry_1"]["image_1"]["good_pixels_fullframe"] = good_pixels
+    out["entry_1"]["image_1"]["good_pixels"] = good_pixels[roi]
+    out["entry_1"]["image_1"]["roi"] = [roi[0].start,roi[0].stop, roi[1].start,roi[1].stop]
     W.write_solo(out)
     print('done.')
     # Close readers 
     R.close()
 
     # Make a small report
-    report_fname = filename_cxd[:-4]+"_report.png"
+    report_fname = filename_cxd[:-4]+"_report.pdf"
     print("Writing report to %s..." % (report_fname), end = '') 
 
-    fig, ax = plt.subplots(2,1,figsize=(20,14))
+    fig, ax = plt.subplots(2,2,figsize=(20,14))
     if bg is not None:
-        ax[0].imshow(bg[roi])
+        pos = ax[0][0].imshow(bg[roi])
+        ax[0][0].set_title('Background')
+        fig.colorbar(pos, ax=ax[0][0])
     if ff is not None:
-        ax[1].imshow(ff[roi])
+        pos = ax[1][0].imshow(ff[roi])
+        ax[1][0].set_title('Flatfield')
+        fig.colorbar(pos, ax=ax[1][0])
+    if integrated_raw is not None:
+        pos = ax[0][1].imshow(integrated_raw)
+        ax[0][1].set_title('Integrated Raw')
+        fig.colorbar(pos, ax=ax[0][1])
+    if integrated_image is not None:
+        pos = ax[1][1].imshow(integrated_image)
+        ax[1][1].set_title('Integrated Image')
+        fig.colorbar(pos, ax=ax[1][1])
+        
     plt.savefig(report_fname)
+    try:
+        plt.show()
+    except:
+        pass
     
     print("done.")
 
