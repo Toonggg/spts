@@ -255,6 +255,9 @@ def cxd_to_h5(filename_cxd,  bg, ff, roi, good_pixels, filename_cxi, do_percent_
 
     if(cropping):
         roi = (slice(miny,maxy,None),slice(minx,maxx,None))
+    if(good_pixels is None):
+        print("Warning: Good pixels informaton is missing. Using all the pixels.")
+        good_pixels = np.ones_like(frame)        
         
     N = R.get_number_of_frames()
     shape = (N, frame[roi].shape[0], frame[roi].shape[1])
@@ -269,7 +272,7 @@ def cxd_to_h5(filename_cxd,  bg, ff, roi, good_pixels, filename_cxi, do_percent_
         data_stack = np.zeros(shape, dtype=frame.dtype) # percent_filter stack
         for i in range(N):
             frame = R.get_frame(i)
-            data_stack[i] = frame[roi]
+            data_stack[i] = frame[roi]*good_pixels[roi]
         filtered_stack = percentile_filter(data_stack, filt_percent, size = (filt_frames, 1, 1))
         print('done.')
 
@@ -295,7 +298,7 @@ def cxd_to_h5(filename_cxd,  bg, ff, roi, good_pixels, filename_cxi, do_percent_
         print('(%d/%d) Writing frames...' % (i+1, N), end='\r') 
 
         frame = R.get_frame(i) 
-        image_raw = frame[roi]
+        image_raw = frame[roi]*good_pixels[roi]
 
         out = {}
         out["entry_1"] = {}
@@ -305,7 +308,7 @@ def cxd_to_h5(filename_cxd,  bg, ff, roi, good_pixels, filename_cxi, do_percent_
 
         # Background-subtracted image
         if(bg_corr is not None):
-            image_bgcor = image_raw.astype(np.float16)-bg_corr
+            image_bgcor = (image_raw.astype(np.float16)-bg_corr)*good_pixels[roi]
             out["entry_1"]["image_1"] = {"data": image_bgcor} 
 
         # Write to disc
@@ -388,8 +391,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     
-    bg,bg_std,good_pixels = estimate_background(args.background_filename, args.bg_frames_max, args.filename)
-    ff,ff_std = estimate_flatfield(args.flatfield_filename, args.ff_frames_max, bg, good_pixels)
+    bg, bg_std, good_pixels = estimate_background(args.background_filename, args.bg_frames_max, args.filename)
+    ff, ff_std = estimate_flatfield(args.flatfield_filename, args.ff_frames_max, bg, good_pixels)
     roi = guess_ROI(ff)
 
     if(args.filename is None):
