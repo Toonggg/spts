@@ -315,8 +315,7 @@ class Worker:
     def update(self):
         fn = self._get_full_filename()
         with h5py.File(fn, "r") as f:
-            assert f[self.conf["raw"]["dataset_name"]].shape[0] == f[self.conf["process"]["dataset_name"]].shape[0]
-            self.N_arr = f[self.conf["raw"]["dataset_name"]].shape[0]    
+            self.N_arr = f[self.conf["raw"]["dataset_name"]].shape[0]  
         if self.conf["general"]["n_images"] is None or self.conf["general"]["n_images"] > 0:
             self.N = self.N_arr
         else:

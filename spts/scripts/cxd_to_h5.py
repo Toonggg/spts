@@ -360,8 +360,8 @@ def cxd_to_h5(filename_cxd,  bg, ff, roi, good_pixels, filename_cxi, do_percent_
         frame = R.get_frame(i) 
         image_raw = frame[roi]*good_pixels[roi]
 
-        out = {}
-        out["entry_1"] = {}
+        out = {} 
+        out["entry_1"] = {} 
 
         # Raw data 
         out["entry_1"]["data_1"] = {"data": image_raw}
