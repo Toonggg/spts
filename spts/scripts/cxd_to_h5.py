@@ -279,6 +279,8 @@ def guess_ROI(ff, flatfield_filename, ff_low_limit, roi_fraction):
     ax[1][1].grid(True)
     ax[1][1].legend(loc="upper right")
     ax[1][1].set_title('Lineout through the center of ROI')
+
+    plt.figtext(.05,.05,'ROI y = %d:%d x = %d:%d       Area above threshold (%d) = %d px' % (ymin, ymax, xmin, xmax, ff_low_limit, (ff_roi >ff_low_limit).sum()),fontsize=10,ha='left')
     plt.savefig(report_fname)
     try:
         plt.show()
