@@ -51,16 +51,15 @@ def estimate_background(filename_bg_cxd, bg_frames_max, filename):
         frame = Rbg.get_frame(i) # dtype: uint16
 
         if i == 0:
-            shape = (N, frame.shape[0], frame.shape[1])
+            shape = (frame.shape[0], frame.shape[1], N)
             bg_stack = np.zeros(shape, dtype=frame.dtype) # background stack
 
-        bg_stack[i,:,:] = frame[:, :]
+        bg_stack[:,:,i] = frame[:, :]
     print("done")
     
-    print("Calculating background estimate by median of buffer...", end='') 
-    bg = np.median(bg_stack, axis=0)
-    print(bg.dtype)
-    bg_std = np.std(bg_stack, axis=0)
+    print("Calculating background estimate by median of buffer...", end='')
+    bg = np.median(bg_stack, axis=2)
+    bg_std = np.std(bg_stack, axis=2)
 
     # Use the standard deviation of the 50% middle values to find
     # bad pixels
@@ -68,9 +67,10 @@ def estimate_background(filename_bg_cxd, bg_frames_max, filename):
     middle_bg = sort_bg[round(len(sort_bg)/4):-round(len(sort_bg)/4)]
     middle_std = np.std(middle_bg)
     good_pixels = bg < np.mean(middle_bg)+middle_std*6
-    print("Found %d bad pixels" % (good_pixels==0).sum())
     bg *= good_pixels
     print("done")
+    print("Found %d bad pixels" % (good_pixels==0).sum())
+
         
     print("Mean over median background = %.0f" % (np.mean(bg)))
     print("Std dev over median background = %.0f" % (np.std(bg)))
@@ -93,7 +93,7 @@ def estimate_background(filename_bg_cxd, bg_frames_max, filename):
     fig.colorbar(pos, ax=ax[0][1])
     ax[1][0].imshow(good_pixels == 0)
     ax[1][0].set_title('Bad pixels')
-    ax[1][1].plot(np.mean(bg_stack,axis=(1,2)))
+    ax[1][1].plot(np.mean(bg_stack,axis=(0,1)))
     ax[1][1].set_title('Mean intensity by frame')
     plt.savefig(report_fname)
     try:
