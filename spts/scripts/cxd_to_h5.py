@@ -51,16 +51,15 @@ def estimate_background(filename_bg_cxd, bg_frames_max, filename):
         frame = Rbg.get_frame(i) # dtype: uint16
 
         if i == 0:
-            shape = (N, frame.shape[0], frame.shape[1])
+            shape = (frame.shape[0], frame.shape[1], N)
             bg_stack = np.zeros(shape, dtype=frame.dtype) # background stack
 
-        bg_stack[i,:,:] = frame[:, :]
+        bg_stack[:,:,i] = frame[:, :]
     print("done")
     
-    print("Calculating background estimate by median of buffer...", end='') 
-    bg = np.median(bg_stack, axis=0)
-    print(bg.dtype)
-    bg_std = np.std(bg_stack, axis=0)
+    print("Calculating background estimate by median of buffer...", end='')
+    bg = np.median(bg_stack, axis=2)
+    bg_std = np.std(bg_stack, axis=2)
 
     # Use the standard deviation of the 50% middle values to find
     # bad pixels
@@ -68,9 +67,10 @@ def estimate_background(filename_bg_cxd, bg_frames_max, filename):
     middle_bg = sort_bg[round(len(sort_bg)/4):-round(len(sort_bg)/4)]
     middle_std = np.std(middle_bg)
     good_pixels = bg < np.mean(middle_bg)+middle_std*6
-    print("Found %d bad pixels" % (good_pixels==0).sum())
     bg *= good_pixels
     print("done")
+    print("Found %d bad pixels" % (good_pixels==0).sum())
+
         
     print("Mean over median background = %.0f" % (np.mean(bg)))
     print("Std dev over median background = %.0f" % (np.std(bg)))
@@ -93,7 +93,7 @@ def estimate_background(filename_bg_cxd, bg_frames_max, filename):
     fig.colorbar(pos, ax=ax[0][1])
     ax[1][0].imshow(good_pixels == 0)
     ax[1][0].set_title('Bad pixels')
-    ax[1][1].plot(np.mean(bg_stack,axis=(1,2)))
+    ax[1][1].plot(np.mean(bg_stack,axis=(0,1)))
     ax[1][1].set_title('Mean intensity by frame')
     plt.savefig(report_fname)
     try:
@@ -277,18 +277,19 @@ def guess_ROI(ff, flatfield_filename, ff_low_limit, roi_fraction):
     ax[0][1].add_patch(rect)
     fig.colorbar(pos, ax=ax[0][1])
     ff_roi = ff[roi]
-    pos = ax[1][0].imshow(ff_roi)
-    ax[1][0].axvline(x=com_x-xmin,color='black',linestyle=':')
-    ax[1][0].axhline(y=com_y-ymin,color='black',linestyle=':')
+    pos = ax[1][0].imshow(ff_roi, extent=[xmin,xmax,ymax,ymin])    
+
+    ax[1][0].axvline(x=com_x,color='black',linestyle=':')
+    ax[1][0].axhline(y=com_y,color='black',linestyle=':')
     ax[1][0].set_title('Median frame ROI')
     fig.colorbar(pos, ax=ax[1][0])
-    ax[1][1].plot(ff_roi[round(com_y-ymin),:],label='horizontal')
-    ax[1][1].plot(ff_roi[:,round(com_x-xmin)],label='vertical')
+    ax[1][1].plot(np.arange(xmin,xmax), ff_roi[round(com_y-ymin),:],label='horizontal')
+    ax[1][1].plot(np.arange(ymin,ymax), ff_roi[:,round(com_x-xmin)],label='vertical')
     ax[1][1].grid(True)
     ax[1][1].legend(loc="upper right")
     ax[1][1].set_title('Lineout through the center of ROI')
 
-    bottom_notes = 'ROI y = %d:%d x = %d:%d. ' % (ymin, ymax, xmin, xmax)
+    bottom_notes = 'COM y = %d x = %d ROI y = %d:%d x = %d:%d. ' % (com_y, com_x, ymin, ymax, xmin, xmax)
     bottom_notes += 'Area above threshold (%d) = %d px. ' % (ff_low_limit, (ff_roi >ff_low_limit).sum())
     plt.figtext(0.05, 0.05, bottom_notes, fontsize=10, ha='left')
     plt.savefig(report_fname)
