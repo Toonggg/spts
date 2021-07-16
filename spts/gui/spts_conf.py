@@ -8,7 +8,7 @@ import copy
 # SPTS modules
 import config
 
-from PyQt5 import QtCore, QtGui, uic
+from PyQt5 import QtCore, QtGui, QtWidgets, uic
 
 import logging
 logger = logging.getLogger("SPTS_GUI")
@@ -24,7 +24,7 @@ class Conf(dict):
         self._saved = None
         
     def open(self):
-        filename = QtGui.QFileDialog.getOpenFileName(self.w, "Open SPTS configuration file", "", "CONF Files (*.conf)")
+        filename = QtWidgets.QFileDialog.getOpenFileName(self.w, "Open SPTS configuration file", "", "CONF Files (*.conf)")
         if isinstance(filename, tuple):
             if filename[0]:
                 filename = filename[0]
@@ -64,7 +64,7 @@ class Conf(dict):
             self[sec_name] = sec_dict
 
     def save_as(self):
-        filename = QtGui.QFileDialog.getSaveFileName(self.w, "Save SPTS configuration file", "", "CONF Files (*.conf)")
+        filename = QtWidgets.QFileDialog.getSaveFileName(self.w, "Save SPTS configuration file", "", "CONF Files (*.conf)")
         if(isinstance(filename, tuple)):
             if(filename[0]):
                 filename = filename[0]
