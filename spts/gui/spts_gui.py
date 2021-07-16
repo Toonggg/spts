@@ -213,12 +213,12 @@ class MainWindow(ui.MainUI, ui.MainBaseUI):
 
     def closeEvent(self, event):
         if self.conf.any_unsaved_changes():
-            saveChanges = QtGui.QMessageBox(QtGui.QMessageBox.Question, "Save changes?",
+            saveChanges = QtWidgets.QMessageBox(QtWidgets.QMessageBox.Question, "Save changes?",
                                             "Would you like to save changes?",
-                                            QtGui.QMessageBox.Save | QtGui.QMessageBox.Discard | QtGui.QMessageBox.Cancel).exec_()
-            if saveChanges == QtGui.QMessageBox.Save:
+                                            QtWidgets.QMessageBox.Save | QtWidgets.QMessageBox.Discard | QtWidgets.QMessageBox.Cancel).exec_()
+            if saveChanges == QtWidgets.QMessageBox.Save:
                 self.conf.save()
-            if saveChanges == QtGui.QMessageBox.Cancel:
+            if saveChanges == QtWidgets.QMessageBox.Cancel:
                 return event.ignore()
         self.preferences.closeEvent()
         self.view_options.closeEvent()
@@ -228,7 +228,7 @@ class MainWindow(ui.MainUI, ui.MainBaseUI):
         settings.setValue("windowState", self.saveState())
         settings.setValue("conf", dict(self.conf))
 
-        QtGui.QMainWindow.closeEvent(self, event)
+        QtWidgets.QMainWindow.closeEvent(self, event)
 
     def read_settings(self):
         settings = QtCore.QSettings("biox.io", "spts")
