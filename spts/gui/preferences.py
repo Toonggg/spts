@@ -1,6 +1,6 @@
 import numpy as np
 
-from PyQt5 import QtCore, QtGui, uic
+from PyQt5 import QtCore, QtGui, QtWidgets, uic
 
 import spts.gui.ui as ui
 
@@ -25,7 +25,7 @@ class Preferences:
         self.w.settings.setValue("dataMountPrefix", self.data_mount_prefix)
         
 
-class PreferencesDialog(QtGui.QDialog, ui.PreferencesUI):
+class PreferencesDialog(QtWidgets.QDialog, ui.PreferencesUI):
 
     def __init__(self, mainWindow):
         self.w = mainWindow

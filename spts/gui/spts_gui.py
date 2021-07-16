@@ -8,7 +8,7 @@ logger = logging.getLogger("MSI_GUI")
 import numpy as np
 from matplotlib import pyplot as pypl
 
-from PyQt5 import QtCore, QtGui, uic
+from PyQt5 import QtCore, QtGui, QtWidgets, uic
 import pyqtgraph as pg
 
 from expiringdict import ExpiringDict
@@ -74,9 +74,9 @@ class MainWindow(ui.MainUI, ui.MainBaseUI):
         
         #from IPython.terminal.debugger import set_trace
         #set_trace()
-        pgDown = QtGui.QShortcut(QtGui.QKeySequence('PgDown'), self)
+        pgDown = QtWidgets.QShortcut(QtGui.QKeySequence('PgDown'), self)
         pgDown.activated.connect(self._show_next)
-        pgUp = QtGui.QShortcut(QtGui.QKeySequence('PgUp'), self)
+        pgUp = QtWidgets.QShortcut(QtGui.QKeySequence('PgUp'), self)
         pgUp.activated.connect(self._show_previous)
 
         self._show_frame()
@@ -244,7 +244,7 @@ class MainWindow(ui.MainUI, ui.MainBaseUI):
                 self.conf[k] = v
 
 def main():
-    app = QtGui.QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
     #app.processEvents()    
 
     mainWindow = MainWindow()
