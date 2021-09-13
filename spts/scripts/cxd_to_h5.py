@@ -199,7 +199,13 @@ def estimate_flatfield(flatfield_filename, ff_frames_max, bg, good_pixels):
     pos = ax[1][1].imshow(ff,norm=LogNorm(vmin=1),cmap=my_cmap)
     ax[1][1].set_title('Median frame (log scale)')
     fig.colorbar(pos, ax=ax[1][1])
-    plt.savefig(report_fname)
+
+    try:
+        plt.savefig(report_fname)
+        print("Report saved succesfully!!!")
+    except IOError:
+        pass 
+
     try:
         plt.show()
     except:
@@ -292,6 +298,13 @@ def guess_ROI(ff, flatfield_filename, ff_low_limit, roi_fraction):
     bottom_notes = 'COM y = %d x = %d ROI y = %d:%d x = %d:%d. ' % (com_y, com_x, ymin, ymax, xmin, xmax)
     bottom_notes += 'Area above threshold (%d) = %d px. ' % (ff_low_limit, (ff_roi >ff_low_limit).sum())
     plt.figtext(0.05, 0.05, bottom_notes, fontsize=10, ha='left')
+
+    try:
+        plt.savefig(report_fname)
+        print("Report saved succesfully!!!")
+    except IOError:
+        pass 
+
     plt.savefig(report_fname)
     try:
         plt.show()
@@ -440,7 +453,12 @@ def cxd_to_h5(filename_cxd,  bg, ff, roi, good_pixels, filename_cxi, do_percent_
         ax[1][1].set_title('Integrated Image')
         fig.colorbar(pos, ax=ax[1][1])
         
-    plt.savefig(report_fname)
+    try:
+        plt.savefig(report_fname)
+        print("Report saved succesfully!!!")
+    except IOError:
+        pass 
+  
     try:
         plt.show()
     except:
