@@ -95,7 +95,13 @@ def estimate_background(filename_bg_cxd, bg_frames_max, filename):
     ax[1][0].set_title('Bad pixels')
     ax[1][1].plot(np.mean(bg_stack,axis=(0,1)))
     ax[1][1].set_title('Mean intensity by frame')
-    plt.savefig(report_fname)
+
+   try:
+        plt.savefig(report_fname)
+        print("\nReport saved succesfully!!!")
+    except IOError:
+        pass
+
     try:
         plt.show()
     except:
@@ -202,7 +208,7 @@ def estimate_flatfield(flatfield_filename, ff_frames_max, bg, good_pixels):
 
     try:
         plt.savefig(report_fname)
-        print("Report saved succesfully!!!")
+        print("\nReport saved succesfully!!!")
     except IOError:
         pass 
 
@@ -301,7 +307,7 @@ def guess_ROI(ff, flatfield_filename, ff_low_limit, roi_fraction):
 
     try:
         plt.savefig(report_fname)
-        print("Report saved succesfully!!!")
+        print("\nReport saved succesfully!!!")
     except IOError:
         pass 
 
@@ -455,7 +461,7 @@ def cxd_to_h5(filename_cxd,  bg, ff, roi, good_pixels, filename_cxi, do_percent_
         
     try:
         plt.savefig(report_fname)
-        print("Report saved succesfully!!!")
+        print("\nReport saved succesfully!!!")
     except IOError:
         pass 
   
