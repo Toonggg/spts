@@ -398,9 +398,9 @@ def cxd_to_h5(filename_cxd,  bg, ff, roi, good_pixels, filename_cxi, do_percent_
 
         # Background-subtracted image
         if(bg_corr is not None):
-            image_bgcor = (image_raw.astype(np.float16) -
-                           bg_corr)*good_pixels[roi]
-            out["entry_1"]["image_1"] = {"data": image_bgcor}
+            image_bgcor = ((image_raw.astype(np.float32) -
+                           bg_corr.astype(np.float32)).astype(np.float32))*good_pixels[roi]
+            out["entry_1"]["image_1"] = {"data": image_bgcor.astype(np.float32)}
 
         # Write to disc
         W.write_slice(out)
