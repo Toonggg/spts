@@ -14,11 +14,11 @@ which python3
 ```
 If only Python 3 is installed in your (current) environment, install in the following way: 
 ```bash
-python setup.py --install 
+python setup.py install
 ```
 Otherwise, it is important to use `python3`:
 ```bash
-python3 setup.py --install 
+python3 setup.py install
 ```
 
 ### Dependencies
