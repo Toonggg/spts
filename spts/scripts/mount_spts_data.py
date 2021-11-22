@@ -1,4 +1,4 @@
-#!/usr/local/bin/python3
+#!/usr/bin/env python
 
 import os
 
@@ -16,7 +16,7 @@ err2 = os.system("mount -t cifs -o username=%s,pass=%s //130.238.39.21/F /mnt/sp
 if (err1 == 0) and (err2 == 0):
     print("INFO: Successfully mounted /mnt/spts_data and /mnt/spts_backup")
 else:
-    print("ERROR: Successfully mounted /mnt/spts_data and /mnt/spts_backu
+    print("ERROR: Did not succesfully mount /mnt/spts_data and /mnt/spts_backup")
 
 
 

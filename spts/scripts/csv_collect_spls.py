@@ -11,19 +11,19 @@ for i,p_file in enumerate(p_files):
      D_i = pickle.load(open(p_file, "r"))
      
      if i == 0:
-	  keys = D_i.keys()
-	  keys.sort()
+      keys = D_i.keys()
+      keys.sort()
           keys.remove("timestamp")
           keys.insert(0, "timestamp")
-       	  for k in keys:
+             for k in keys:
                if isinstance(D_i[k], str):
                     D[k] = [""]*len(p_files)
                else:
-       	            D[k] = np.zeros(len(p_files), dtype=type(D_i[k]))
+                       D[k] = np.zeros(len(p_files), dtype=type(D_i[k]))
                
      for k in keys:
           print p_file, k
-    	  D[k][i] = D_i[k]
+          D[k][i] = D_i[k]
 
 
 with open("params_spts.csv", "w") as f:

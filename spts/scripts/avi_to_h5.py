@@ -1,4 +1,4 @@
-#!/usr/local/bin/python3
+#!/usr/bin/env python
 import numpy as np
 import os,sys,h5py
 from pylab import imread
