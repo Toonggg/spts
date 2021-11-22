@@ -141,11 +141,11 @@ def estimate_flatfield(flatfield_filename, ff_frames_max, bg, good_pixels):
     N = min([ff_frames_max, R.get_number_of_frames()])
     frame = R.get_frame(0)  # dtype: uint16
     if(good_pixels is None):
-        print("Warning: Good pixels informaton is missing. Using all the pixels.")
+        print("Warning: Good pixels information is missing. Using all the pixels.")
         good_pixels = np.ones_like(frame)
 
     if bg is None:
-        print("Warning: Background informaton is missing. Using median the 1st frame as background.")
+        print("Warning: Background information is missing. Using median of the 1st frame as background.")
         bg = np.median(frame.flatten())
 
     shape = (N, frame.shape[0], frame.shape[1])
@@ -226,7 +226,7 @@ def estimate_flatfield(flatfield_filename, ff_frames_max, bg, good_pixels):
 
 def guess_ROI(ff, flatfield_filename, ff_low_limit, roi_fraction):
     if(ff is None):
-        print("Cannot guess ROI, dlat field information missing!")
+        print("Cannot guess ROI: flat field information missing!")
         return (slice(None), slice(None))
 
     ff_thres = ff.copy()
@@ -344,7 +344,7 @@ def cxd_to_h5(filename_cxd,  bg, ff, roi, good_pixels, filename_cxi, do_percent_
     if(cropping):
         roi = (slice(miny, maxy, None), slice(minx, maxx, None))
     if(good_pixels is None):
-        print("Warning: Good pixels informaton is missing. Using all the pixels.")
+        print("Warning: Good pixels information is missing. Using all the pixels.")
         good_pixels = np.ones_like(frame)
 
     N = R.get_number_of_frames()
