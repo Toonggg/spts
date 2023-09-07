@@ -61,7 +61,7 @@ def find_particles(image_scored, image_thresholded, min_dist, n_particles_max, p
             i_max = (v*(l == i_label)).argmax()
             dislocation.append(np.sqrt((x[i_max]-xc)**2 + (y[i_max]-yc)**2))
 
-        merged = list(np.zeros(len(i_labels), dtype=np.bool))
+        merged = list(np.zeros(len(i_labels), dtype=bool))
         
         # Merge too close peaks
         log_debug(logger, "Merge too close points")
