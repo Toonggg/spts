@@ -39,8 +39,8 @@ def estimate_background(filename_bg_cxd, bg_frames_max, filename):
         bg = f['bg'][:]
         bg_std = f['bg_std'][:]
         good_pixels = f['good_pixels'][:]
-        print("Mean over median background = %.0f" % (np.mean(bg)))
-        print("Std dev over median background = %.0f" % (np.std(bg)))
+        print("Mean over mean background = %.0f" % (np.mean(bg)))
+        print("Std dev over mean background = %.0f" % (np.std(bg)))
         return bg, bg_std, good_pixels
     except OSError:
         pass
@@ -58,8 +58,8 @@ def estimate_background(filename_bg_cxd, bg_frames_max, filename):
         bg_stack[:, :, i] = frame[:, :]
     print("done")
 
-    print("Calculating background estimate by median of buffer...", end='')
-    bg = np.median(bg_stack, axis=2)
+    print("Calculating background estimate by mean of buffer...", end='')
+    bg = np.mean(bg_stack, axis=2)
     bg_std = np.std(bg_stack, axis=2)
 
     # Use the standard deviation of the 50% middle values to find
@@ -72,8 +72,8 @@ def estimate_background(filename_bg_cxd, bg_frames_max, filename):
     print("done")
     print("Found %d bad pixels" % (good_pixels == 0).sum())
 
-    print("Mean over median background = %.0f" % (np.mean(bg)))
-    print("Std dev over median background = %.0f" % (np.std(bg)))
+    print("Mean over mean background = %.0f" % (np.mean(bg)))
+    print("Std dev over mean background = %.0f" % (np.std(bg)))
 
     f = h5py.File(f_cache, 'w')
     f.create_dataset('bg', data=bg)
