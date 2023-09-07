@@ -330,7 +330,7 @@ def guess_ROI(ff, flatfield_filename, ff_low_limit, roi_fraction):
     return roi
 
 
-def cxd_to_h5(filename_cxd,  bg, ff, roi, good_pixels, filename_cxi, do_percent_filter, filt_percent, filt_frames, cropping, minx, maxx, miny, maxy):
+def cxd_to_h5(filename_cxd,  bg, ff, roi, good_pixels, filename_cxi, do_percent_filter, filt_percent, filt_frames, cropping, minx, maxx, miny, maxy, skip_raw = False):
     print("*************************************")
     print("*   Particle conversion section     *")
     print("*************************************")
@@ -394,13 +394,17 @@ def cxd_to_h5(filename_cxd,  bg, ff, roi, good_pixels, filename_cxi, do_percent_
         out["entry_1"] = {}
 
         # Raw data
-        out["entry_1"]["data_1"] = {"data": image_raw}
+        if(skip_raw):
+            out["entry_1"]["data_1"]['data'] = h5py.SoftLink('/entry_1/image_1/data')
+        else:
+            out["entry_1"]["data_1"] = {"data": image_raw}
 
         # Background-subtracted image
         if(bg_corr is not None):
             image_bgcor = ((image_raw.astype(np.float32) -
                            bg_corr.astype(np.float32)).astype(np.float32))*good_pixels[roi]
-            out["entry_1"]["image_1"] = {"data": image_bgcor.astype(np.float32)}
+            # Save corrected data as float16 to save on space
+            out["entry_1"]["image_1"] = {"data": image_bgcor.astype(np.float16)}
 
         # Write to disc
         W.write_slice(out)
@@ -528,6 +532,8 @@ if __name__ == "__main__":
                         help='Maximum y-coordinate of cropped raw data.', default=2048)
     parser.add_argument('-o', '--out-filename', type=str,
                         help='destination file')
+    parser.add_argument('-s', '--skip-raw', action='store_true',
+                        help='Skip saving the raw data, instead linking to processed data')
 
     args = parser.parse_args()
 
@@ -555,7 +561,7 @@ if __name__ == "__main__":
     W = h5writer.H5Writer(f_out)
 
     cxd_to_h5(args.filename, bg, ff, roi, good_pixels, W, args.percentile_filter, args.percentile_number,
-              args.percentile_frames, args.crop_raw, args.min_x, args.max_x, args.min_y, args.max_y)
+              args.percentile_frames, args.crop_raw, args.min_x, args.max_x, args.min_y, args.max_y, args.skip_raw)
 
     # Write out information on the command used
     out = {"entry_1": {"process_1": {}}}
