@@ -94,7 +94,7 @@ def measure_areas(i_labels, labels):
     return areas
 
 def merge_close_points(i_labels, labels, X, Y, V, merged, min_dist):
-    
+    i_labels = list(i_labels)
     while True:
 
         n_labels = len(i_labels)

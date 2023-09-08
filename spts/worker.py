@@ -274,7 +274,7 @@ class Worker:
 
     def _load_data(self, i, dataset_name, subtract_constant, xcmc, ycmc, saturation_level=None):
         # Load data from file at index "i"
-        image = self._read_image(i, dataset_name)
+        image = self._read_image(i, dataset_name, dtype=np.float32)
         if saturation_level is not None:
             saturation_mask = image >= saturation_level
         else: 

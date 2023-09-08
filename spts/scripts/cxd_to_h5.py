@@ -103,7 +103,8 @@ def estimate_background(filename_bg_cxd, bg_frames_max, filename):
         pass
 
     try:
-        plt.show()
+        if(not args.quiet):
+            plt.show()
     except:
         pass
 
@@ -202,7 +203,7 @@ def estimate_flatfield(flatfield_filename, ff_frames_max, bg, good_pixels):
 
     import copy
     # Use special colormap to avoid seeing value below 1
-    my_cmap = copy.copy(matplotlib.cm.get_cmap())
+    my_cmap = copy.copy(plt.get_cmap())
     my_cmap.set_bad(my_cmap.colors[0])
     pos = ax[1][1].imshow(ff, norm=LogNorm(vmin=1), cmap=my_cmap)
     ax[1][1].set_title('Median frame (log scale)')
@@ -215,7 +216,8 @@ def estimate_flatfield(flatfield_filename, ff_frames_max, bg, good_pixels):
         pass
 
     try:
-        plt.show()
+        if(not args.quiet):
+            plt.show()
     except:
         pass
 
@@ -284,7 +286,7 @@ def guess_ROI(ff, flatfield_filename, ff_low_limit, roi_fraction):
 
     import copy
     # Use special colormap to avoid seeing value below 1
-    my_cmap = copy.copy(matplotlib.cm.get_cmap())
+    my_cmap = copy.copy(plt.get_cmap())
     my_cmap.set_bad(my_cmap.colors[0])
     pos = ax[0][1].imshow(ff, norm=LogNorm(vmin=1), cmap=my_cmap)
     ax[0][1].set_title('Median frame (log scale)')
@@ -322,7 +324,8 @@ def guess_ROI(ff, flatfield_filename, ff_low_limit, roi_fraction):
 
     plt.savefig(report_fname)
     try:
-        plt.show()
+        if(not args.quiet):
+            plt.show()
     except:
         pass
 
@@ -394,9 +397,7 @@ def cxd_to_h5(filename_cxd,  bg, ff, roi, good_pixels, filename_cxi, do_percent_
         out["entry_1"] = {}
 
         # Raw data
-        if(skip_raw):
-            out["entry_1"]["data_1"]['data'] = h5py.SoftLink('/entry_1/image_1/data')
-        else:
+        if(not skip_raw):
             out["entry_1"]["data_1"] = {"data": image_raw}
 
         # Background-subtracted image
@@ -485,7 +486,8 @@ def cxd_to_h5(filename_cxd,  bg, ff, roi, good_pixels, filename_cxi, do_percent_
         pass
 
     try:
-        plt.show()
+        if(not args.quiet):
+            plt.show()
     except:
         pass
 
@@ -534,6 +536,8 @@ if __name__ == "__main__":
                         help='destination file')
     parser.add_argument('-s', '--skip-raw', action='store_true',
                         help='Skip saving the raw data, instead linking to processed data')
+    parser.add_argument('-q', '--quiet', action='store_true',
+                        help="Don't show plots interactively")
 
     args = parser.parse_args()
 
@@ -570,3 +574,6 @@ if __name__ == "__main__":
     W.write_solo(out)
     # Close CXI file
     W.close()
+    if args.skip_raw:
+        h5py.File(f_out,'r+')['entry_1']['data_1']['data'] = h5py.SoftLink('/entry_1/image_1/data')
+        

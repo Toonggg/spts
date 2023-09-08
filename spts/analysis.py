@@ -62,10 +62,10 @@ def analyse_particles(input, saturation_mask, i_labels, labels, x, y, merged, n_
 
         if values is not None and len(values) > 0:
             psuccess[i] = True
-            psum[i] = values.sum()
+            psum[i] = values.sum(dtype=float)
             pmin[i] = values.min()
             pmax[i] = values.max()
-            pmean[i] = values.mean()
+            pmean[i] = values.mean(dtype=float)
             pmedian[i] = np.median(values)
             
     success = True
