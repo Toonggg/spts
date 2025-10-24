@@ -101,7 +101,8 @@ class MainWindow(ui.MainUI, ui.MainBaseUI):
     def _create_worker(self, silent=False):
         try:
             self.worker = worker.Worker(self.conf, pipeline_mode=True, data_mount_prefix=self.preferences.data_mount_prefix)
-        except IOError:
+        # except IOError:
+        except:
             if not silent:
                 logger.warning("Cannot create worker instance (IOError). Data might not be mounted.")
             self.worker = DummyWorker(self.conf)
