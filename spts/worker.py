@@ -148,7 +148,7 @@ class Worker:
         log_info(logger, "(%i/%i) Denoise image" % (i+1, self.N_arr))
         self._update_denoiser()
         image_denoised = self.denoiser.denoise_image(image, full_output=True)
-        O.add("image_denoised", np.asarray(image_denoised, dtype=np.int16), 4, pipeline=True)
+        O.add("image_denoised", np.asarray(image_denoised, dtype=np.float16), 4, pipeline=True)
         success = True
         O.add("success", success, 0, pipeline=True)        
         out_package["3_denoise"] = O.get_dict(self.conf["general"]["output_level"], self.pipeline_mode)
@@ -162,7 +162,7 @@ class Worker:
         image_denoised = tmp_package["3_denoise"]["image_denoised"]
 
         image_thresholded = spts.threshold.threshold(image_denoised, self.conf["threshold"]["threshold"], fill_holes=self.conf["threshold"].get("fill_holes", False))
-        O.add("image_thresholded", np.asarray(image_thresholded, dtype=np.bool), 3, pipeline=True)
+        O.add("image_thresholded", np.asarray(image_thresholded, dtype=bool), 3, pipeline=True)
         thresholded_n_pixels = image_thresholded.sum()
         O.add("thresholded_n_pixels", thresholded_n_pixels, 0)
         success = thresholded_n_pixels > 0
@@ -244,7 +244,7 @@ class Worker:
         log_info(logger, "(%i/%i) Analyse image at %i particle positions" % (i, self.N_arr, len(i_labels)))
         #if n_labels > self.n_particles_max:
         #    log_warning(logger, "(%i/%i) Too many particles (%i/%i) - skipping analysis for %i particles" % (i_image+1, self.N_arr, n_labels, self.n_particles_max, n_labels - self.n_particles_max))
-        O.add("peak_success", uniform_particle_array(peak_sum, n_max, np.bool, vinit=False), 0)
+        O.add("peak_success", uniform_particle_array(peak_sum, n_max, bool, vinit=False), 0)
         O.add("peak_sum", uniform_particle_array(peak_sum, n_max), 0, pipeline=True)
         O.add("peak_mean", uniform_particle_array(peak_mean, n_max), 0)
         O.add("peak_median", uniform_particle_array(peak_median, n_max), 0)
@@ -260,13 +260,13 @@ class Worker:
             else:
                 s = spts.analysis.THUMBNAILS_WINDOW_SIZE_DEFAULT
         if peak_thumbnails is not None and success:
-            O.add("peak_thumbnails", np.asarray(peak_thumbnails, dtype=np.int32), 3)
+            O.add("peak_thumbnails", np.asarray(peak_thumbnails), 3)
         else:
-            O.add("peak_thumbnails", np.zeros(shape=(n_max, s, s), dtype=np.int32), 3)
+            O.add("peak_thumbnails", np.zeros(shape=(n_max, s, s)), 3)
         if masked_image is not None and success:
-            O.add("masked_image", np.asarray(masked_image, dtype=np.int32), 3, pipeline=True)            
+            O.add("masked_image", np.asarray(masked_image), 3, pipeline=True)            
         else:
-            O.add("masked_image", np.zeros(shape=image.shape, dtype=np.int32), 3, pipeline=True)
+            O.add("masked_image", np.zeros(shape=image.shape), 3, pipeline=True)
         O.add("success", success, 0, pipeline=True)
         out_package["6_analyse"] = O.get_dict(self.conf["general"]["output_level"], self.pipeline_mode)
         tmp_package["6_analyse"] = O.get_dict(5, True)
@@ -274,7 +274,7 @@ class Worker:
 
     def _load_data(self, i, dataset_name, subtract_constant, xcmc, ycmc, saturation_level=None):
         # Load data from file at index "i"
-        image = self._read_image(i, dataset_name, np.int32)
+        image = self._read_image(i, dataset_name, dtype=np.float32)
         if saturation_level is not None:
             saturation_mask = image >= saturation_level
         else: 
@@ -298,7 +298,7 @@ class Worker:
             fn = "%s/%s" % (self.data_mount_prefix, self.conf["general"]["filename"])
         return fn
         
-    def _read_image(self, i, dataset_name, dtype, N=1):
+    def _read_image(self, i, dataset_name, dtype=None, N=1):
         fn = self._get_full_filename()
         with h5py.File(fn, "r") as f:
             if dataset_name not in f:

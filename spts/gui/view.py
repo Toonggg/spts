@@ -95,7 +95,7 @@ class View(pg.GraphicsView):
             
     def draw_new_annotations(self, xs, ys, intensities, circlescores):
         for x, y, i, c in zip(xs, ys, intensities, circlescores):
-            t = pg.TextItem("%i" % i, color='g')
+            t = pg.TextItem("%g" % i, color='g')
             t.setPos(x+12, y-20)
             self.box.addItem(t)
             t = pg.TextItem("%.2f" % c, color='y')

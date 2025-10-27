@@ -39,8 +39,8 @@ def estimate_background(filename_bg_cxd, bg_frames_max, filename):
         bg = f['bg'][:]
         bg_std = f['bg_std'][:]
         good_pixels = f['good_pixels'][:]
-        print("Mean over median background = %.0f" % (np.mean(bg)))
-        print("Std dev over median background = %.0f" % (np.std(bg)))
+        print("Mean over mean background = %.0f" % (np.mean(bg)))
+        print("Std dev over mean background = %.0f" % (np.std(bg)))
         return bg, bg_std, good_pixels
     except OSError:
         pass
@@ -58,8 +58,8 @@ def estimate_background(filename_bg_cxd, bg_frames_max, filename):
         bg_stack[:, :, i] = frame[:, :]
     print("done")
 
-    print("Calculating background estimate by median of buffer...", end='')
-    bg = np.median(bg_stack, axis=2)
+    print("Calculating background estimate by mean of buffer...", end='')
+    bg = np.mean(bg_stack, axis=2)
     bg_std = np.std(bg_stack, axis=2)
 
     # Use the standard deviation of the 50% middle values to find
@@ -72,8 +72,8 @@ def estimate_background(filename_bg_cxd, bg_frames_max, filename):
     print("done")
     print("Found %d bad pixels" % (good_pixels == 0).sum())
 
-    print("Mean over median background = %.0f" % (np.mean(bg)))
-    print("Std dev over median background = %.0f" % (np.std(bg)))
+    print("Mean over mean background = %.0f" % (np.mean(bg)))
+    print("Std dev over mean background = %.0f" % (np.std(bg)))
 
     f = h5py.File(f_cache, 'w')
     f.create_dataset('bg', data=bg)
@@ -103,7 +103,8 @@ def estimate_background(filename_bg_cxd, bg_frames_max, filename):
         pass
 
     try:
-        plt.show()
+        if(not args.quiet):
+            plt.show()
     except:
         pass
 
@@ -202,7 +203,7 @@ def estimate_flatfield(flatfield_filename, ff_frames_max, bg, good_pixels):
 
     import copy
     # Use special colormap to avoid seeing value below 1
-    my_cmap = copy.copy(matplotlib.cm.get_cmap())
+    my_cmap = copy.copy(plt.get_cmap())
     my_cmap.set_bad(my_cmap.colors[0])
     pos = ax[1][1].imshow(ff, norm=LogNorm(vmin=1), cmap=my_cmap)
     ax[1][1].set_title('Median frame (log scale)')
@@ -215,7 +216,8 @@ def estimate_flatfield(flatfield_filename, ff_frames_max, bg, good_pixels):
         pass
 
     try:
-        plt.show()
+        if(not args.quiet):
+            plt.show()
     except:
         pass
 
@@ -284,7 +286,7 @@ def guess_ROI(ff, flatfield_filename, ff_low_limit, roi_fraction):
 
     import copy
     # Use special colormap to avoid seeing value below 1
-    my_cmap = copy.copy(matplotlib.cm.get_cmap())
+    my_cmap = copy.copy(plt.get_cmap())
     my_cmap.set_bad(my_cmap.colors[0])
     pos = ax[0][1].imshow(ff, norm=LogNorm(vmin=1), cmap=my_cmap)
     ax[0][1].set_title('Median frame (log scale)')
@@ -322,7 +324,8 @@ def guess_ROI(ff, flatfield_filename, ff_low_limit, roi_fraction):
 
     plt.savefig(report_fname)
     try:
-        plt.show()
+        if(not args.quiet):
+            plt.show()
     except:
         pass
 
@@ -330,7 +333,7 @@ def guess_ROI(ff, flatfield_filename, ff_low_limit, roi_fraction):
     return roi
 
 
-def cxd_to_h5(filename_cxd,  bg, ff, roi, good_pixels, filename_cxi, do_percent_filter, filt_percent, filt_frames, cropping, minx, maxx, miny, maxy):
+def cxd_to_h5(filename_cxd,  bg, ff, roi, good_pixels, filename_cxi, do_percent_filter, filt_percent, filt_frames, cropping, minx, maxx, miny, maxy, skip_raw = False):
     print("*************************************")
     print("*   Particle conversion section     *")
     print("*************************************")
@@ -394,13 +397,15 @@ def cxd_to_h5(filename_cxd,  bg, ff, roi, good_pixels, filename_cxi, do_percent_
         out["entry_1"] = {}
 
         # Raw data
-        out["entry_1"]["data_1"] = {"data": image_raw}
+        if(not skip_raw):
+            out["entry_1"]["data_1"] = {"data": image_raw}
 
         # Background-subtracted image
         if(bg_corr is not None):
             image_bgcor = ((image_raw.astype(np.float32) -
                            bg_corr.astype(np.float32)).astype(np.float32))*good_pixels[roi]
-            out["entry_1"]["image_1"] = {"data": image_bgcor.astype(np.float32)}
+            # Save corrected data as float16 to save on space
+            out["entry_1"]["image_1"] = {"data": image_bgcor.astype(np.float16)}
 
         # Write to disc
         W.write_slice(out)
@@ -481,7 +486,8 @@ def cxd_to_h5(filename_cxd,  bg, ff, roi, good_pixels, filename_cxi, do_percent_
         pass
 
     try:
-        plt.show()
+        if(not args.quiet):
+            plt.show()
     except:
         pass
 
@@ -528,6 +534,10 @@ if __name__ == "__main__":
                         help='Maximum y-coordinate of cropped raw data.', default=2048)
     parser.add_argument('-o', '--out-filename', type=str,
                         help='destination file')
+    parser.add_argument('-s', '--skip-raw', action='store_true',
+                        help='Skip saving the raw data, instead linking to processed data')
+    parser.add_argument('-q', '--quiet', action='store_true',
+                        help="Don't show plots interactively")
 
     args = parser.parse_args()
 
@@ -555,7 +565,7 @@ if __name__ == "__main__":
     W = h5writer.H5Writer(f_out)
 
     cxd_to_h5(args.filename, bg, ff, roi, good_pixels, W, args.percentile_filter, args.percentile_number,
-              args.percentile_frames, args.crop_raw, args.min_x, args.max_x, args.min_y, args.max_y)
+              args.percentile_frames, args.crop_raw, args.min_x, args.max_x, args.min_y, args.max_y, args.skip_raw)
 
     # Write out information on the command used
     out = {"entry_1": {"process_1": {}}}
@@ -564,3 +574,6 @@ if __name__ == "__main__":
     W.write_solo(out)
     # Close CXI file
     W.close()
+    if args.skip_raw:
+        h5py.File(f_out,'r+')['entry_1']['data_1']['data'] = h5py.SoftLink('/entry_1/image_1/data')
+        
