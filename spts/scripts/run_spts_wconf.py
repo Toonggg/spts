@@ -12,9 +12,14 @@ import time
 
 # for f in filenames:
 
-f = sys.argv[1]
-c = sys.argv[2]
+c = sys.argv[1]
+f = sys.argv[2]
+
+assert c[-5:]=='.conf', 'second input should be *.conf'
+assert f[-4:]=='.cxi', 'first input should be *.cxi'
+
 n = f[:-4]
+
 
 d = "./"+n+"_analysis"
 if not os.path.exists(d):
