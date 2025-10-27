@@ -124,7 +124,8 @@ def get_values_label(image, labels, i_label, masked_image=None, thumbnails=None)
         ymax = y-n // (2+n)
         ymax = ymax if ymax < Ny else Ny
         tmp = image[ymin:ymax, xmin:xmax]
-        thumbnails[int(i_label),:tmp.shape[0],:tmp.shape[1]] = tmp[:,:] 
+        # breakpoint()
+        thumbnails[int(i_label),:tmp.shape[0],:tmp.shape[1]] = tmp[:,:]
     return values
     
 
